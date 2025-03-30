@@ -25,16 +25,18 @@
 4. Настройте переменные окружения:
    Создайте файл `.env` в корне проекта на основе `.env.example`:
    ```
-   DATABASE_URL=postgresql+asyncpg://user:password@localhost/dbname
-   # или для SQLite:
-   # DATABASE_URL=sqlite+aiosqlite:///./database.db
+    DB_HOST=localhost
+    DB_PORT=5432
+    DB_USER=username
+    DB_PASSWORD=password
+    DB_NAME=your_db_name
    ```
 
 ## 🚀 Запуск проекта
 
 1. Запустите сервер FastAPI:
    ```bash
-   uvicorn app.main:app --reload
+   python main.py
    ```
 
 2. Откройте в браузере:
