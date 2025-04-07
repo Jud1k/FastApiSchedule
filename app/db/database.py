@@ -2,22 +2,21 @@ from typing import Annotated
 from datetime import datetime
 
 from sqlalchemy import func
-from sqlalchemy.ext.asyncio import AsyncAttrs, create_async_engine, async_sessionmaker
+from sqlalchemy.ext.asyncio import (
+    AsyncAttrs,
+    create_async_engine,
+    async_sessionmaker,
+    AsyncSession,
+)
 from sqlalchemy.orm import DeclarativeBase, declared_attr, Mapped, mapped_column
 
 from app.core.config import get_db_url
 
 DATABASE_URL = get_db_url()
 engine = create_async_engine(DATABASE_URL)
-async_session_maker = async_sessionmaker(engine)
-
-
-async def get_async_session():
-    async with async_session_maker() as session:
-        try:
-            yield session
-        finally:
-            await session.close()
+async_session_maker = async_sessionmaker(
+    engine, class_=AsyncSession, expire_on_commit=False
+)
 
 
 int_pk = Annotated[int, mapped_column(primary_key=True, autoincrement="auto")]

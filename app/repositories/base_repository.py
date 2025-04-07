@@ -1,86 +1,63 @@
-from typing import TypeVar, Type
+from typing import Type, TypeVar, Generic
 import logging
 from abc import ABC, abstractmethod
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
-from sqlalchemy import select, delete
+from sqlalchemy import delete
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.ext.asyncio import AsyncSession
 
-
-TModel = TypeVar("TModel", bound=DeclarativeBase)
+from app.db.database import Base
 
 logger = logging.getLogger(__name__)
 
 
-class AbstractRepository(ABC):
-    @abstractmethod
-    async def get_all(self):
-        raise NotImplementedError
-
-    @abstractmethod
-    async def get_one_or_none_by_id(self, id: int):
-        raise NotImplementedError
-
-    @abstractmethod
-    async def create(self, data: dict):
-        raise NotImplementedError
-
-    @abstractmethod
-    async def update(self, filter_by: int | str, data: dict):
-        raise NotImplementedError
-
-    @abstractmethod
-    async def delete(self, delete_all: bool, filter_by: dict):
-        raise NotImplementedError
+T = TypeVar("T", bound=Base)
 
 
-class BaseRepository(AbstractRepository):
-    model: Type[TModel] = None
-
-    def __init__(self, session: AsyncSession):
-        self.session = session
-
-    async def get_all(self):
-        res = await self.session.execute(select(self.model))
+class SqlAlchemyRepository(Generic[T]):
+    model: Type[T] = None
+    async def get_all(self, session: AsyncSession) -> list[T]:
+        stmt = select(self.model)
+        res = await session.execute(stmt)
         return res.scalars().all()
 
-    async def get_one_or_none_by_id(self, id: int):
-        res = await self.session.execute(select(self.model).where(self.model.id == id))
+    async def get_one_or_none_by_id(
+        self, session: AsyncSession, id: int
+    ) -> dict | None:
+        res = await session.execute(select(self.model).filter(self.model.id == id))
         return res.scalar_one_or_none()
 
-    async def create(self, data: dict):
-        value = self.model(**data)
-        self.session.add(value)
+    async def create(self, session: AsyncSession, data: dict) -> dict:
         try:
-            await self.session.commit()
-            await self.session.refresh(value)
+            value = self.model(**data)
+            session.add(value)
+            await session.flush()
         except IntegrityError as e:
-            await self.session.rollback()
             logger.error(f"Failed to create record:{str(e)}")
-            raise 
+            raise
         return value
 
-    async def update(self, obj: dict, update_data: dict) -> dict:
-        for key, value in update_data.items():
-            setattr(obj, key, value)
+    async def update(self, session: AsyncSession, obj: dict, update_data: dict) -> dict:
         try:
-            await self.session.commit()
-            await self.session.refresh(obj)
+            for key, value in update_data.items():
+                setattr(obj, key, value)
+                await session.flush()
         except IntegrityError as e:
-            await self.session.rollback()
             logger.error(f"Failed to update data:{str(e)}")
-            raise 
+            raise
         return obj
 
-    async def delete(self, id: int | None, delete_all: bool = False) -> int:
-        query = delete(self.model)
-        if not delete_all:
-            query = delete(self.model).where(self.model.id == id)
-        result = await self.session.execute(query)
+    async def delete(
+        self, session: AsyncSession, id: int | None, delete_all: bool = False
+    ) -> int:
         try:
-            await self.session.commit()
+            query = delete(self.model)
+            if not delete_all:
+                query = delete(self.model).filter(self.model.id == id)
+            result = await session.execute(query)
+            await session.flush()
         except SQLAlchemyError as e:
-            await self.session.rollback()
             logger.error("Failed to delete data")
-            raise 
+            raise
         return result.rowcount

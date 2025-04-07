@@ -14,6 +14,7 @@ class StudentFromDB(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+
 class StudentToCreate(BaseModel):
     first_name: str
     last_name: str
@@ -21,12 +22,11 @@ class StudentToCreate(BaseModel):
     email: EmailStr
     phone: str
     course: int
+    group_id: int
 
 
-class StudentToUpdate(BaseModel):
-    first_name: str|None
-    last_name: str|None
-    date_of_birth: date|None
-    email: EmailStr|str|None
-    phone: str|None
-    course: int|None
+class StudentsWithGroupName(BaseModel):
+    id: int
+    full_name: str
+    course: int
+    group_name: str | None

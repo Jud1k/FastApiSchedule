@@ -10,6 +10,7 @@ from app.api.routes.teacher_routes import router as teacher_router
 from app.api.routes.subject_routes import router as subject_router
 from app.api.routes.room_routes import router as room_router
 from app.api.routes.group_routes import router as group_router
+from app.api.routes.schedule_routes import router as schedule_router
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,7 @@ app.include_router(teacher_router)
 app.include_router(subject_router)
 app.include_router(room_router)
 app.include_router(group_router)
+app.include_router(schedule_router)
 
 app.add_middleware(
     CORSMiddleware,

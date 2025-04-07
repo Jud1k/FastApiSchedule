@@ -1,4 +1,5 @@
 import logging
+from typing import Type
 from app.api.schemas.group import GroupFromDB, GroupToCreate
 from app.repositories.repository import GroupRepository
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,50 +11,67 @@ logger = logging.getLogger(__name__)
 
 
 class GroupService:
-    def __init__(self, session: AsyncSession):
-        self.repo = GroupRepository(session)
+    def __init__(self, group_repo: GroupRepository):
+        self.group_repo = group_repo
 
-    async def get_all(self) -> list[GroupFromDB]:
-        return await self.repo.get_all()
+    async def get_all(self, session: AsyncSession) -> list[GroupFromDB]:
+        async with session.begin():
+            return await self.group_repo.get_all(session)
 
-    async def get_one_by_id(self, group_id: int) -> GroupFromDB:
-        record = await self.repo.get_one_or_none_by_id(group_id)
-        if not record:
-            raise HTTPException(
-                status_code=404, detail=f"Record with {group_id} id does not exist"
+    async def get_one_by_id(self, session: AsyncSession, group_id: int) -> GroupFromDB:
+        async with session.begin():
+            record = await self.group_repo.get_one_or_none_by_id(
+                id=group_id, session=session
             )
-        return record
+            if not record:
+                raise HTTPException(
+                    status_code=404, detail=f"Record with {group_id} id does not exist"
+                )
+            return record
 
-    async def create(self, group_data: GroupToCreate) -> GroupFromDB:
-        data = group_data.model_dump()
-        try:
-            return await self.repo.create(data)
-        except IntegrityError:
-            raise HTTPException(
-                status_code=400,
-                detail="Group with this name alredy exist",
-            )
+    async def create(
+        self, session: AsyncSession, group_data: GroupToCreate
+    ) -> GroupFromDB:
+        async with session.begin():
+            data = group_data.model_dump()
+            try:
+                return await self.group_repo.create(data=data, session=session)
+            except IntegrityError:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Group with this name alredy exist",
+                )
 
     async def update(
-        self, group_id: int | None, group_data: GroupToCreate
+        self, session: AsyncSession, group_id: int | None, group_data: GroupToCreate
     ) -> GroupFromDB:
-        group = await self.repo.get_one_or_none_by_id(group_id)
-        if not group:
-            raise HTTPException(
-                status_code=404, detail=f"Record with {group_id} id does not exist"
+        async with session.begin():
+            group = await self.group_repo.get_one_or_none_by_id(
+                id=group_id, session=session
             )
-        try:
-            update_group_data = group_data.model_dump(exclude_unset=True)
-            return await self.repo.update(group, update_group_data)
-        except IntegrityError as e:
-            raise HTTPException(
-                status_code=400, detail="Group with this name alredy exist"
-            )
+            if not group:
+                raise HTTPException(
+                    status_code=404, detail=f"Record with {group_id} id does not exist"
+                )
+            try:
+                update_group_data = group_data.model_dump(exclude_unset=True)
+                return await self.group_repo.update(
+                    obj=group, update_data=update_group_data, session=session
+                )
+            except IntegrityError as e:
+                raise HTTPException(
+                    status_code=400, detail="Group with this name alredy exist"
+                )
 
-    async def delete(self, group_id: int, delete_all: bool = False) -> int:
-        try:
-            return await self.repo.delete(group_id, delete_all)
-        except SQLAlchemyError:
-            raise HTTPException(
-                status_code=400, detail="Something went wrong. Try again"
-            )
+    async def delete(
+        self, session: AsyncSession, group_id: int, delete_all: bool = False
+    ) -> int:
+        async with session.begin():
+            try:
+                return await self.group_repo.delete(
+                    id=group_id, delete_all=delete_all, session=session
+                )
+            except SQLAlchemyError:
+                raise HTTPException(
+                    status_code=400, detail="Something went wrong. Try again"
+                )
