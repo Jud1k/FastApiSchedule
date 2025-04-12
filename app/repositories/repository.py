@@ -42,11 +42,17 @@ class TeacherRepository(SqlAlchemyRepository[Room]):
 class GroupRepository(SqlAlchemyRepository[Group]):
     model = Group
 
+    async def search_groups(self, session: AsyncSession, query: str) -> list[dict]:
+        stmt = select(self.model).where(self.model.name.like("%" + query + "%"))
+        result = await session.execute(stmt)
+        groups = result.scalars().all()
+        return groups
+
 
 class ScheduleRepository(SqlAlchemyRepository[ScheduleLesson]):
     model = ScheduleLesson
 
-    async def get_all_lessons_with_names(self, session: AsyncSession)->list[dict]:
+    async def get_all_lessons_with_names(self, session: AsyncSession) -> list[dict]:
         stmt = (
             select(self.model)
             .options(
@@ -73,3 +79,32 @@ class ScheduleRepository(SqlAlchemyRepository[ScheduleLesson]):
             }
             for lesson in lessons
         ]
+
+    async def get_all_lessons_wtih_names_by_group_id(
+        self, group_id: int, session: AsyncSession
+    ) -> list[dict]:
+        stmt = (
+            select(self.model)
+            .options(
+                joinedload(self.model.subject),
+                joinedload(self.model.room),
+                joinedload(self.model.teacher),
+            )
+            .where(self.model.group_id == group_id)
+            .order_by(self.model.day_week)
+        )
+        result = await session.execute(stmt)
+        lessons = result.scalars().all()
+
+        return (
+            {
+                "id": lesson.id,
+                "time_id": lesson.time_id,
+                "day_week": lesson.day_week,
+                "type_lesson": lesson.type_lesson,
+                "subject": lesson.subject.name,
+                "teacher": f"{lesson.teacher.first_name} {lesson.teacher.last_name}",
+                "room": lesson.room.name,
+            }
+            for lesson in lessons
+        )

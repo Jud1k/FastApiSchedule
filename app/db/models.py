@@ -3,11 +3,12 @@ from sqlalchemy import ForeignKey, Date
 from app.db.database import Base, uniq_str, str_null_true, int_pk
 from datetime import date
 
+
 class Student(Base):
     id: Mapped[int_pk]
     first_name: Mapped[str]
     last_name: Mapped[str]
-    date_of_birth: Mapped[Date]=mapped_column(Date)
+    date_of_birth: Mapped[Date] = mapped_column(Date)
     email: Mapped[uniq_str]
     phone: Mapped[str]
     course: Mapped[int]
@@ -20,7 +21,7 @@ class Subject(Base):
     id: Mapped[int_pk]
     name: Mapped[uniq_str]
     lessons: Mapped[list["ScheduleLesson"]] = relationship(
-        "ScheduleLesson", back_populates="subject", cascade="all,delete"
+        "ScheduleLesson", back_populates="subject", cascade="all,delete-orphan"
     )
 
 
@@ -28,9 +29,11 @@ class Group(Base):
     id: Mapped[int_pk]
     name: Mapped[uniq_str]
 
-    students: Mapped[list["Student"]] = relationship(back_populates="group")
+    students: Mapped[list["Student"]] = relationship(
+        back_populates="group", cascade="all,delete-orphan"
+    )
     lessons: Mapped[list["ScheduleLesson"]] = relationship(
-        "ScheduleLesson", back_populates="group", cascade="all,delete"
+        "ScheduleLesson", back_populates="group", cascade="all,delete-orphan"
     )
 
 
@@ -43,7 +46,7 @@ class Teacher(Base):
     phone: Mapped[uniq_str]
 
     lessons: Mapped[list["ScheduleLesson"]] = relationship(
-        "ScheduleLesson", back_populates="teacher", cascade="all,delete"
+        "ScheduleLesson", back_populates="teacher", cascade="all,delete-orphan"
     )
 
 
@@ -51,7 +54,7 @@ class Room(Base):
     id: Mapped[int_pk]
     name: Mapped[uniq_str]
     lessons: Mapped[list["ScheduleLesson"]] = relationship(
-        "ScheduleLesson", back_populates="room", cascade="all,delete"
+        "ScheduleLesson", back_populates="room", cascade="all,delete-orphan"
     )
 
 

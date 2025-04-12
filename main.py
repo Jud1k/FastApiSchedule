@@ -42,7 +42,7 @@ async def validation_exception_handler(req: Request, exc: RequestValidationError
 
 
 @app.exception_handler(ResponseValidationError)
-async def validation_exception_handler(req: Request, exc: ResponseValidationError):
+async def validation_exception_handler2(req: Request, exc: ResponseValidationError):
     logger.error(f"Validation error: {exc.errors()}")
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,

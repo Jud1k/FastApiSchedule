@@ -34,3 +34,13 @@ class ScheduleWithNames(BaseModel):
     subject: str
     teacher: str
     room: str
+
+
+class ScheduleByGroupId(BaseModel):
+    id: int
+    time_id: int
+    day_week: int
+    type_lesson: str
+    subject: str
+    teacher: str
+    room: str

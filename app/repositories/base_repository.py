@@ -17,6 +17,7 @@ T = TypeVar("T", bound=Base)
 
 class SqlAlchemyRepository(Generic[T]):
     model: Type[T] = None
+
     async def get_all(self, session: AsyncSession) -> list[T]:
         stmt = select(self.model)
         res = await session.execute(stmt)
@@ -34,7 +35,7 @@ class SqlAlchemyRepository(Generic[T]):
             session.add(value)
             await session.flush()
         except IntegrityError as e:
-            logger.error(f"Failed to create record:{str(e)}")
+            logger.error(f"Failed to create record:{e}")
             raise
         return value
 
@@ -44,7 +45,7 @@ class SqlAlchemyRepository(Generic[T]):
                 setattr(obj, key, value)
                 await session.flush()
         except IntegrityError as e:
-            logger.error(f"Failed to update data:{str(e)}")
+            logger.error(f"Failed to update data:{e}")
             raise
         return obj
 
@@ -58,6 +59,6 @@ class SqlAlchemyRepository(Generic[T]):
             result = await session.execute(query)
             await session.flush()
         except SQLAlchemyError as e:
-            logger.error("Failed to delete data")
+            logger.error(f"Failed to delete data:{e}")
             raise
         return result.rowcount

@@ -75,3 +75,6 @@ class GroupService:
                 raise HTTPException(
                     status_code=400, detail="Something went wrong. Try again"
                 )
+
+    async def search_groups(self, session: AsyncSession, query: str) -> list[dict]:
+        return await self.group_repo.search_groups(session=session, query=query)

@@ -2,7 +2,12 @@ from sqlite3 import IntegrityError
 from fastapi import HTTPException
 from pydantic import HttpUrl
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.api.schemas.schedule import ScheduleFromDB, ScheduleToCreate, ScheduleWithNames
+from app.api.schemas.schedule import (
+    ScheduleByGroupId,
+    ScheduleFromDB,
+    ScheduleToCreate,
+    ScheduleWithNames,
+)
 from app.repositories.repository import ScheduleRepository
 
 
@@ -33,7 +38,7 @@ class ScheduleService:
     ) -> ScheduleFromDB:
         async with session.begin():
             try:
-                data=lesson_data.model_dump()
+                data = lesson_data.model_dump()
                 return await self.schedule_repo.create(session=session, data=data)
             except IntegrityError as e:
                 raise HTTPException(
@@ -45,3 +50,11 @@ class ScheduleService:
     ) -> list[ScheduleWithNames]:
         async with session.begin():
             return await self.schedule_repo.get_all_lessons_with_names(session=session)
+
+    async def get_all_lessons_with_names_by_group_id(
+        self, group_id: int, session: AsyncSession
+    ) -> list[ScheduleByGroupId]:
+        async with session.begin():
+            return await self.schedule_repo.get_all_lessons_wtih_names_by_group_id(
+                group_id=group_id, session=session
+            )

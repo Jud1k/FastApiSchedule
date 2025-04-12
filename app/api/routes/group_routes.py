@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.params import Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.group import GroupFromDB, GroupToCreate
@@ -16,7 +17,7 @@ async def get_all(
     return await service.get_all(session=session)
 
 
-@router.get("/{group_id}", response_model=GroupFromDB)
+@router.get("/smthg/{group_id}", response_model=GroupFromDB)
 async def get_one_by_id(
     group_id: int,
     service: GroupService = Depends(get_group_service),
@@ -58,3 +59,12 @@ async def delete(
     return await service.delete(
         session=session, group_id=group_id, delete_all=delete_all
     )
+
+
+@router.get("/search")
+async def search_groups(
+    query:str=Query(default="ИЦЭ-21"),
+    session: AsyncSession = Depends(get_async_session),
+    service: GroupService = Depends(get_group_service),
+):
+    return await service.search_groups(session=session,query=query)
