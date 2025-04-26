@@ -1,62 +1,71 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi.params import Query
 
 from app.api.schemas.subject import SubjectFromDB, SubjectToCreate
-from app.api.dependecy import get_async_session, get_subject_service
+from app.api.dependecy import get_subject_service
+from app.exceptions import ConflictError, NotFoundError
 from app.services.subject_service import SubjectService
 
 router = APIRouter(prefix="/subject", tags=["Subjects💡"])
 
 
+@router.get("/search", response_model=list[SubjectFromDB])
+async def search_subject_by_name(
+    query: str = Query(max_length=50),
+    service: SubjectService = Depends(get_subject_service),
+):
+    return await service.search_subjects_by_name(query=query)
+
+
 @router.get("/", response_model=list[SubjectFromDB])
 async def get_all(
     service: SubjectService = Depends(get_subject_service),
-    session: AsyncSession = Depends(get_async_session),
 ):
-    return await service.get_all(session=session)
+    return await service.get_all()
 
 
 @router.get("/{subject_id}", response_model=SubjectFromDB)
 async def get_one_by_id(
     subject_id: int,
     service: SubjectService = Depends(get_subject_service),
-    session: AsyncSession = Depends(get_async_session),
 ):
-    return await service.get_one_by_id(session=session, subject_id=subject_id)
+    try:
+        return await service.get_one_by_id(subject_id=subject_id)
+    except NotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 @router.post("/", response_model=SubjectFromDB)
 async def create(
-    subject: SubjectToCreate,
+    subject_in: SubjectToCreate,
     service: SubjectService = Depends(get_subject_service),
-    session: AsyncSession = Depends(get_async_session),
 ):
-    return await service.create(session=session, subject_data=subject)
+    try:
+        return await service.create(subject_in=subject_in)
+    except ConflictError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
 
 
 @router.put("/{subject_id}", response_model=SubjectFromDB)
 async def update(
     subject_id: int,
-    subject: SubjectToCreate,
+    subject_in: SubjectToCreate,
     service: SubjectService = Depends(get_subject_service),
-    session: AsyncSession = Depends(get_async_session),
 ):
-    return await service.update(
-        session=session, subject_id=subject_id, subject_data=subject
-    )
+    try:
+        return await service.update(subject_id=subject_id, subject_in=subject_in)
+    except NotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ConflictError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
 
 
-@router.delete("/")
+@router.delete("/{subject_id}")
 async def delete(
-    subject_id: int | None = None,
-    delete_all: bool = False,
+    subject_id: int,
     service: SubjectService = Depends(get_subject_service),
-    session: AsyncSession = Depends(get_async_session),
 ):
-    if not subject_id and not delete_all:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Need at least one argument"
-        )
-    return await service.delete(
-        session=session, subject_id=subject_id, delete_all=delete_all
-    )
+    try:
+        return await service.delete(subject_id=subject_id)
+    except NotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

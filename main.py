@@ -1,5 +1,8 @@
+import time
+import uuid
 import uvicorn
 import logging
+from logging.handlers import RotatingFileHandler
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError, ResponseValidationError
@@ -11,8 +14,11 @@ from app.api.routes.subject_routes import router as subject_router
 from app.api.routes.room_routes import router as room_router
 from app.api.routes.group_routes import router as group_router
 from app.api.routes.schedule_routes import router as schedule_router
+from app.logging import configure_logging
 
-logger = logging.getLogger(__name__)
+logger=logging.getLogger(__name__)
+
+configure_logging()
 
 app = FastAPI()
 
@@ -30,6 +36,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    request_id = str(uuid.uuid1())
+    logger.info(f"Request started | ID: {request_id} | {request.method} {request.url}")
+
+    start_time = time.perf_counter()
+    response = await call_next(request)
+    process_time = (time.perf_counter() - start_time) * 1000
+
+    logger.info(
+        f"Request completed | ID: {request_id} "
+        f"Status: {response.status_code} | Time {process_time:.2f}ms"
+    )
+    return response
 
 
 @app.exception_handler(RequestValidationError)

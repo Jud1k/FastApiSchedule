@@ -1,58 +1,71 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi.params import Query
 
 from app.api.schemas.room import RoomFromDB, RoomToCreate
-from app.api.dependecy import get_async_session, get_room_service
+from app.api.dependecy import get_room_service
+from app.exceptions import ConflictError, NotFoundError
 from app.services.room_service import RoomService
 
 router = APIRouter(prefix="/room", tags=["Rooms🏫"])
 
 
-@router.get("/", response_model=list[RoomFromDB])
-async def get_all(
+@router.get("/search", response_model=list[RoomFromDB])
+async def search_rooms_by_name(
+    query: str = Query(max_length=50),
     service: RoomService = Depends(get_room_service),
-    session: AsyncSession = Depends(get_async_session),
 ):
-    return await service.get_all(session=session)
+    return await service.search_rooms_by_name(query=query)
+
+
+@router.get("/", response_model=list[RoomFromDB])
+async def get_all_rooms(
+    service: RoomService = Depends(get_room_service),
+):
+    return await service.get_all()
 
 
 @router.get("/{room_id}", response_model=RoomFromDB)
-async def get_one_by_id(
+async def get_room_by_id(
     room_id: int,
     service: RoomService = Depends(get_room_service),
-    session: AsyncSession = Depends(get_async_session),
 ):
-    return await service.get_one_by_id(session=session, room_id=room_id)
+    try:
+        return await service.get_one_by_id(room_id=room_id)
+    except NotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 @router.post("/", response_model=RoomFromDB)
-async def create(
-    room: RoomToCreate,
+async def create_room(
+    room_in: RoomToCreate,
     service: RoomService = Depends(get_room_service),
-    session: AsyncSession = Depends(get_async_session),
 ):
-    return await service.create(session=session, room_data=room)
+    try:
+        return await service.create(room_in=room_in)
+    except ConflictError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
 
 
 @router.put("/{room_id}", response_model=RoomFromDB)
-async def update(
+async def update_room(
     room_id: int,
-    room: RoomToCreate,
+    room_in: RoomToCreate,
     service: RoomService = Depends(get_room_service),
-    session: AsyncSession = Depends(get_async_session),
 ):
-    return await service.update(session=session, room_id=room_id, room_data=room)
+    try:
+        return await service.update(room_id=room_id, room_in=room_in)
+    except NotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ConflictError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
 
 
-@router.delete("/")
-async def delete(
-    room_id: int | None = None,
-    delete_all: bool = False,
+@router.delete("/{room_id}")
+async def delete_room(
+    room_id: int,
     service: RoomService = Depends(get_room_service),
-    session: AsyncSession = Depends(get_async_session),
 ):
-    if not room_id and not delete_all:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Need at least one argument"
-        )
-    return await service.delete(session=session, room_id=room_id, delete_all=delete_all)
+    try:
+        return await service.delete(room_id=room_id)
+    except NotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
