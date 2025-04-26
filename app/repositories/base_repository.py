@@ -1,10 +1,8 @@
-from typing import Type, TypeVar, Generic
+from typing import Type, TypeVar, Generic, Optional
 import logging
-from abc import ABC, abstractmethod
 from sqlalchemy.future import select
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from sqlalchemy import delete
-from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.database import Base
@@ -18,47 +16,38 @@ T = TypeVar("T", bound=Base)
 class SqlAlchemyRepository(Generic[T]):
     model: Type[T] = None
 
-    async def get_all(self, session: AsyncSession) -> list[T]:
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def get_all(self) -> list[T]:
         stmt = select(self.model)
-        res = await session.execute(stmt)
+        res = await self.session.execute(stmt)
         return res.scalars().all()
 
-    async def get_one_or_none_by_id(
-        self, session: AsyncSession, id: int
-    ) -> dict | None:
-        res = await session.execute(select(self.model).filter(self.model.id == id))
+    async def get_one_or_none_by_id(self, id: int) -> Optional[T]:
+        res = await self.session.execute(select(self.model).filter(self.model.id == id))
         return res.scalar_one_or_none()
 
-    async def create(self, session: AsyncSession, data: dict) -> dict:
-        try:
-            value = self.model(**data)
-            session.add(value)
-            await session.flush()
-        except IntegrityError as e:
-            logger.error(f"Failed to create record:{e}")
-            raise
+    async def get_by_name(self, name: str) -> Optional[T]:
+        res = await self.session.execute(
+            select(self.model).filter(self.model.name == name)
+        )
+        return res.scalar_one_or_none()
+
+    async def create(self, data: dict) -> T:
+        value = self.model(**data)
+        self.session.add(value)
+        await self.session.flush()
         return value
 
-    async def update(self, session: AsyncSession, obj: dict, update_data: dict) -> dict:
-        try:
-            for key, value in update_data.items():
-                setattr(obj, key, value)
-                await session.flush()
-        except IntegrityError as e:
-            logger.error(f"Failed to update data:{e}")
-            raise
-        return obj
+    async def update(self, data: dict, update_data: dict) -> T:
+        for key, value in update_data.items():
+            setattr(data, key, value)
+            await self.session.flush()
+        return data
 
-    async def delete(
-        self, session: AsyncSession, id: int | None, delete_all: bool = False
-    ) -> int:
-        try:
-            query = delete(self.model)
-            if not delete_all:
-                query = delete(self.model).filter(self.model.id == id)
-            result = await session.execute(query)
-            await session.flush()
-        except SQLAlchemyError as e:
-            logger.error(f"Failed to delete data:{e}")
-            raise
-        return result.rowcount
+    async def delete(self, id: int) -> int:
+        query = delete(self.model).filter(self.model.id == id)
+        await self.session.execute(query)
+        await self.session.flush()
+ 

@@ -1,70 +1,71 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.params import Query
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.group import GroupFromDB, GroupToCreate
+from app.exceptions import ConflictError, NotFoundError
 from app.services.group_service import GroupService
-from app.api.dependecy import get_async_session, get_group_service
+from app.api.dependecy import get_group_service
 
 router = APIRouter(prefix="/group", tags=["Groups👩‍💻👨‍💻"])
 
 
-@router.get("/", response_model=list[GroupFromDB])
-async def get_all(
+@router.get("/search", response_model=list[GroupFromDB])
+async def search_groups_by_name(
+    query: str = Query(max_length=50),
     service: GroupService = Depends(get_group_service),
-    session: AsyncSession = Depends(get_async_session),
 ):
-    return await service.get_all(session=session)
+    return await service.search_groups_by_name(query=query)
 
 
-@router.get("/smthg/{group_id}", response_model=GroupFromDB)
-async def get_one_by_id(
+@router.get("/", response_model=list[GroupFromDB])
+async def get_all_groups(
+    service: GroupService = Depends(get_group_service),
+):
+    return await service.get_all()
+
+
+@router.get("/{group_id}", response_model=GroupFromDB)
+async def get_group_by_id(
     group_id: int,
     service: GroupService = Depends(get_group_service),
-    session: AsyncSession = Depends(get_async_session),
 ):
-    return await service.get_one_by_id(session=session, group_id=group_id)
+    try:
+        return await service.get_one_by_id(group_id=group_id)
+    except NotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 @router.post("/", response_model=GroupFromDB)
-async def create(
-    group: GroupToCreate,
+async def create_group(
+    group_in: GroupToCreate,
     service: GroupService = Depends(get_group_service),
-    session: AsyncSession = Depends(get_async_session),
 ):
-    return await service.create(session=session, group_data=group)
+    try:
+        return await service.create(group_data=group_in)
+    except ConflictError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
 
 
 @router.put("/{group_id}", response_model=GroupFromDB)
-async def update(
+async def update_group(
     group_id: int,
-    group: GroupToCreate,
-    service: GroupService = Depends(get_group_service),
-    session: AsyncSession = Depends(get_async_session),
-):
-    return await service.update(session=session, group_id=group_id, group_data=group)
-
-
-@router.delete("/")
-async def delete(
-    group_id: int | None = None,
-    delete_all: bool = False,
-    service: GroupService = Depends(get_group_service),
-    session: AsyncSession = Depends(get_async_session),
-):
-    if not group_id and not delete_all:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Need at least one argument"
-        )
-    return await service.delete(
-        session=session, group_id=group_id, delete_all=delete_all
-    )
-
-
-@router.get("/search")
-async def search_groups(
-    query:str=Query(default="ИЦЭ-21"),
-    session: AsyncSession = Depends(get_async_session),
+    group_in: GroupToCreate,
     service: GroupService = Depends(get_group_service),
 ):
-    return await service.search_groups(session=session,query=query)
+    try:
+        return await service.update(group_id=group_id, group_in=group_in)
+    except NotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ConflictError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+
+
+@router.delete("/{group_id}")
+async def delete_group(
+    group_id: int,
+    service: GroupService = Depends(get_group_service),
+):
+    try:
+        await service.delete(group_id=group_id)
+    except NotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

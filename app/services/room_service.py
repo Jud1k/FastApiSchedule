@@ -1,76 +1,55 @@
 import logging
 from app.api.schemas.room import RoomFromDB, RoomToCreate
+from app.exceptions import ConflictError, NotFoundError
 from app.repositories.repository import RoomRepository
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError
 
 
 logger = logging.getLogger(__name__)
 
 
 class RoomService:
-    def __init__(self, room_repo: RoomRepository):
-        self.room_repo = room_repo
+    def __init__(self, session: AsyncSession):
+        self.room_repo = RoomRepository(session)
 
-    async def get_all(self, session: AsyncSession) -> list[RoomFromDB]:
-        async with session.begin():
-            return await self.room_repo.get_all(session)
+    async def get_all(self) -> list[RoomFromDB]:
+        return await self.room_repo.get_all()
 
-    async def get_one_by_id(self, session: AsyncSession, room_id: int) -> RoomFromDB:
-        async with session.begin():
-            record = await self.room_repo.get_one_or_none_by_id(
-                session=session, id=room_id
-            )
-            if not record:
-                raise HTTPException(
-                    status_code=404, detail=f"Record with {room_id} id does not exist"
-                )
-            return record
+    async def get_one_by_id(self, room_id: int) -> RoomFromDB:
+        record = await self.room_repo.get_one_or_none_by_id(id=room_id)
+        if not record:
+            logger.error(f"Room wtih {room_id} id does not exist")
+            raise NotFoundError("An room with this id does not exist")
+        return record
 
-    async def create(
-        self, session: AsyncSession, room_data: RoomToCreate
-    ) -> RoomFromDB:
-        async with session.begin():
-            data = room_data.model_dump()
-            try:
-                return await self.room_repo.create(session=session, data=data)
-            except IntegrityError as e:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Room with this name alredy exist",
-                )
+    async def create(self, room_in: RoomToCreate) -> RoomFromDB:
+        room = await self.room_repo.get_by_name(name=room_in.name)
+        if room:
+            logger.error(f"Room with {room_in.name} name already exist")
+            raise ConflictError("An room with this name alredy exist")
+        data = room_in.model_dump()
 
-    async def update(
-        self, session: AsyncSession, room_id: int | None, room_data: RoomToCreate
-    ) -> RoomFromDB:
-        async with session.begin():
-            room = await self.room_repo.get_one_or_none_by_id(
-                session=session, id=room_id
-            )
-            if not room:
-                raise HTTPException(
-                    status_code=404, detail=f"Record with {room_id} id does not exist"
-                )
-            try:
-                update_room_data = room_data.model_dump(exclude_unset=True)
-                return await self.room_repo.update(
-                    session=session, obj=room, update_data=update_room_data
-                )
-            except IntegrityError as e:
-                raise HTTPException(
-                    status_code=400, detail="Room with this name already exist"
-                )
+        return await self.room_repo.create(data=data)
 
-    async def delete(
-        self, session: AsyncSession, room_id: int | None, delete_all: bool = False
-    ) -> int:
-        async with session.begin():
-            try:
-                return await self.room_repo.delete(
-                    session=session, id=room_id, delete_all=delete_all
-                )
-            except SQLAlchemyError:
-                raise HTTPException(
-                    status_code=400, detail="Something went wrong. Try again"
-                )
+    async def update(self, room_id: int, room_in: RoomToCreate) -> RoomFromDB:
+        room = await self.room_repo.get_one_or_none_by_id(id=room_id)
+        if not room:
+            logger.error(f"Room with {room_id} id does not exist")
+            raise NotFoundError("An room with this id does not exist")
+        try:
+            update_data = room_in.model_dump(exclude_unset=True)
+            return await self.room_repo.update(data=room, update_data=update_data)
+        except IntegrityError as e:
+            logger.error({e})
+            raise ConflictError("An room with this name alredy exist")
+
+    async def delete(self, room_id: int):
+        room = await self.room_repo.get_one_or_none_by_id(id=room_id)
+        if not room:
+            logger.error(f"Room with {room_id} id does not exist")
+            raise NotFoundError("An room with this id does not exist")
+        return await self.room_repo.delete(id=room_id)
+
+    async def search_rooms_by_name(self, query: str) -> list[RoomFromDB]:
+        return await self.room_repo.search_by_name(query=query)

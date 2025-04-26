@@ -1,83 +1,61 @@
 import logging
 from app.api.schemas.subject import SubjectFromDB, SubjectToCreate
+from app.exceptions import ConflictError, NotFoundError
 from app.repositories.repository import SubjectRepository
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError
 
 
 logger = logging.getLogger(__name__)
 
 
 class SubjectService:
-    def __init__(self, subject_repo: SubjectRepository):
-        self.subject_repo = subject_repo
+    def __init__(self, session: AsyncSession):
+        self.subject_repo = SubjectRepository(session)
 
-    async def get_all(self, session: AsyncSession) -> list[SubjectFromDB]:
-        async with session.begin():
-            return await self.subject_repo.get_all(session)
+    async def get_all(self) -> list[SubjectFromDB]:
+        return await self.subject_repo.get_all()
 
-    async def get_one_by_id(
-        self, session: AsyncSession, subject_id: int
-    ) -> SubjectFromDB:
-        async with session.begin():
-            record = await self.subject_repo.get_one_or_none_by_id(
-                id=subject_id, session=session
-            )
-            if not record:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"Record with {subject_id} id does not exist",
-                )
-            return record
+    async def get_one_by_id(self, subject_id: int) -> SubjectFromDB:
+        subject = await self.subject_repo.get_one_or_none_by_id(id=subject_id)
+        if not subject:
+            logger.error(f"Subject with {subject_id} id does not exist")
+            raise NotFoundError("An subject with this id does not exist")
+        return subject
 
-    async def create(
-        self, session: AsyncSession, subject_data: SubjectToCreate
-    ) -> SubjectFromDB:
-        async with session.begin():
-            data = subject_data.model_dump()
-            try:
-                return await self.subject_repo.create(data=data, session=session)
-            except IntegrityError:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Subject with this name alredy exist",
-                )
+    async def create(self, subject_in: SubjectToCreate) -> SubjectFromDB:
+        subject = await self.subject_repo.get_by_name(name=subject_in.name)
+        if subject:
+            logger.error(f"Subject with {subject_in.name} name already exist")
+            raise ConflictError("An subject with this name already exist")
+        data = subject_in.model_dump()
+        return await self.subject_repo.create(data=data)
 
     async def update(
         self,
-        session: AsyncSession,
-        subject_id: int | None,
-        subject_data: SubjectToCreate,
+        subject_id: int,
+        subject_in: SubjectToCreate,
     ) -> SubjectFromDB:
-        async with session.begin():
-            subject = await self.subject_repo.get_one_or_none_by_id(
-                id=subject_id, session=session
+        subject = await self.subject_repo.get_one_or_none_by_id(id=subject_id)
+        if not subject:
+            logger.error(f"Subject with {subject_id} id does not exist")
+            raise NotFoundError("An subject with this id does not exist")
+        try:
+            update_data = subject_in.model_dump(exclude_unset=True)
+            return await self.subject_repo.update(
+                data=subject,
+                update_data=update_data,
             )
-            if not subject:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"Record with {subject_id} id does not exist",
-                )
-            try:
-                update_subject_data = subject_data.model_dump(exclude_unset=True)
-                return await self.subject_repo.update(
-                    obj=subject, update_data=update_subject_data, session=session
-                )
-            except IntegrityError:
-                raise HTTPException(
-                    status_code=400, detail="Subject with this name alredy exist"
-                )
+        except IntegrityError as e:
+            logger.error({e})
+            raise ConflictError("Subject with this name alredy exist")
 
-    async def delete(
-        self, session: AsyncSession, subject_id: int, delete_all: bool = False
-    ) -> int:
-        async with session.begin():
-            try:
-                return await self.subject_repo.delete(
-                    id=subject_id, delete_all=delete_all, session=session
-                )
-            except SQLAlchemyError:
-                raise HTTPException(
-                    status_code=400, detail="Something went wrong. Try again"
-                )
+    async def delete(self, subject_id: int):
+        subject = await self.subject_repo.get_one_or_none_by_id(id=subject_id)
+        if not subject:
+            logger.error(f"Subject with {subject_id} id does not exist")
+            raise NotFoundError("An subject with this id does not exist")
+        return await self.subject_repo.delete(id=subject_id)
+
+    async def search_subjects_by_name(self, query: str) -> list[SubjectFromDB]:
+        return await self.subject_repo.search_by_name(query=query)

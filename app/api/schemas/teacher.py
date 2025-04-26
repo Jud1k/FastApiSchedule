@@ -3,8 +3,7 @@ from pydantic import BaseModel,EmailStr
 
 class TeacherFromDB(BaseModel):
     id: int
-    first_name: str
-    last_name: str
+    name:str
     date_of_birth: date
     email: EmailStr
     phone: str
@@ -12,8 +11,7 @@ class TeacherFromDB(BaseModel):
     updated_at:datetime
 
 class TeacherToCreate(BaseModel):
-    first_name:str
-    last_name:str
+    name:str
     date_of_birth: date
     email: EmailStr
     phone: str

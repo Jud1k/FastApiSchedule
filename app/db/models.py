@@ -39,8 +39,7 @@ class Group(Base):
 
 class Teacher(Base):
     id: Mapped[int_pk]
-    first_name: Mapped[str]
-    last_name: Mapped[str]
+    name:Mapped[uniq_str]
     date_of_birth: Mapped[Date] = mapped_column(Date)
     email: Mapped[uniq_str]
     phone: Mapped[uniq_str]
