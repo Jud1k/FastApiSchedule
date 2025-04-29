@@ -40,6 +40,12 @@ class SqlAlchemyRepository(Generic[T]):
         await self.session.flush()
         return value
 
+    async def create_many(self, data: list[dict]) -> list[T]:
+        values = [self.model(**d) for d in data]
+        self.session.add_all(values)
+        await self.session.flush()
+        return values
+
     async def update(self, data: dict, update_data: dict) -> T:
         for key, value in update_data.items():
             setattr(data, key, value)
@@ -50,4 +56,3 @@ class SqlAlchemyRepository(Generic[T]):
         query = delete(self.model).filter(self.model.id == id)
         await self.session.execute(query)
         await self.session.flush()
- 
