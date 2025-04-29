@@ -16,7 +16,7 @@ from app.api.routes.group_routes import router as group_router
 from app.api.routes.schedule_routes import router as schedule_router
 from app.logging import configure_logging
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 configure_logging()
 
@@ -78,4 +78,4 @@ async def main_page():
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="localhost", port=8000)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000)
