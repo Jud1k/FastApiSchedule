@@ -16,7 +16,7 @@ from app.api.routes.group_routes import router as group_router
 from app.api.routes.schedule_routes import router as schedule_router
 from app.logging import configure_logging
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 configure_logging()
 
