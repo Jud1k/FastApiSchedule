@@ -14,7 +14,7 @@ async def search_rooms_by_name(
     query: str = Query(max_length=50),
     service: RoomService = Depends(get_room_service),
 ):
-    return await service.search_rooms_by_name(query=query)
+    return await service.search_rooms(query=query)
 
 
 @router.get("/", response_model=list[RoomFromDB])

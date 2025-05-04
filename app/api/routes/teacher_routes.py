@@ -14,7 +14,7 @@ async def search_teachers_by_name(
     query: str = Query(max_length=50),
     service: TeacherService = Depends(get_teacher_service),
 ):
-    return await service.search_teachers_by_name(query=query)
+    return await service.search_teachers(query=query)
 
 
 @router.get("/", response_model=list[TeacherFromDB])

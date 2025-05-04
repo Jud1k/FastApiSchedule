@@ -57,5 +57,5 @@ class SubjectService:
             raise NotFoundError("An subject with this id does not exist")
         return await self.subject_repo.delete(id=subject_id)
 
-    async def search_subjects_by_name(self, query: str) -> list[SubjectFromDB]:
-        return await self.subject_repo.search_by_name(query=query)
+    async def search_subjects(self, query: str) -> list[SubjectFromDB]:
+        return await self.subject_repo.search(query=query)

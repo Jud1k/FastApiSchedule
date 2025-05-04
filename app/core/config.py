@@ -8,12 +8,12 @@ class Setting(BaseSettings):
     DB_USER: str
     DB_PASSWORD: str
     DB_NAME: str
-
+    REDIS_PORT: int
+    REDIS_SSL: bool
+    REDIS_HOST: str
     model_config = SettingsConfigDict(
         env_file=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".env")
     )
-    # class Config:
-    #     env_file=".env"
 
 
 settings = Setting()

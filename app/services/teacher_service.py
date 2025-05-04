@@ -58,5 +58,5 @@ class TeacherService:
         return await self.teacher_repo.delete(id=teacher_id)
 
 
-    async def search_teachers_by_name(self, query: str) -> list[TeacherFromDB]:
-        return await self.teacher_repo.search_by_name(query=query)
+    async def search_teachers(self, query: str) -> list[TeacherFromDB]:
+        return await self.teacher_repo.search(query=query)

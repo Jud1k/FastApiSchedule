@@ -14,7 +14,7 @@ async def search_subject_by_name(
     query: str = Query(max_length=50),
     service: SubjectService = Depends(get_subject_service),
 ):
-    return await service.search_subjects_by_name(query=query)
+    return await service.search_subjects(query=query)
 
 
 @router.get("/", response_model=list[SubjectFromDB])

@@ -13,6 +13,6 @@ def configure_logging():
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
-    # console_handler = logging.StreamHandler()
-    # console_handler.setFormatter(formatter)
-    # logger.addHandler(console_handler)
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)

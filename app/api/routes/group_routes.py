@@ -14,7 +14,7 @@ async def search_groups_by_name(
     query: str = Query(max_length=50),
     service: GroupService = Depends(get_group_service),
 ):
-    return await service.search_groups_by_name(query=query)
+    return await service.search_groups(query=query)
 
 
 @router.get("/", response_model=list[GroupFromDB])
@@ -41,7 +41,7 @@ async def create_group(
     service: GroupService = Depends(get_group_service),
 ):
     try:
-        return await service.create(group_data=group_in)
+        return await service.create(group_in=group_in)
     except ConflictError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
 
