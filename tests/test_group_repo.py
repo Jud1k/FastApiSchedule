@@ -78,5 +78,5 @@ async def test_search_by_name(db, search_term, expected_count):
             {"name": "Another Group3"},
         ]
     )
-    result = await repo.search_by_name(search_term)
+    result = await repo.search(search_term)
     assert len(result) == expected_count
