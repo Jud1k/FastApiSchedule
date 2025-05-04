@@ -11,6 +11,7 @@ venv/
 env/
 .venv/
 .test.env
+.docker.env
 # Игнорировать файлы настроек IDE
 .vscode/
 

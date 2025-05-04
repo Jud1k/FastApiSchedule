@@ -1,7 +1,7 @@
 from typing import Annotated
 from datetime import datetime
 
-from sqlalchemy import func
+from sqlalchemy import func, TIMESTAMP
 from sqlalchemy.ext.asyncio import (
     AsyncAttrs,
     create_async_engine,
@@ -31,9 +31,9 @@ async def get_db():
 
 
 int_pk = Annotated[int, mapped_column(primary_key=True, autoincrement="auto")]
-created_at = Annotated[datetime, mapped_column(server_default=func.now())]
+created_at = Annotated[datetime, mapped_column(TIMESTAMP,server_default=func.now())]
 updated_at = Annotated[
-    datetime, mapped_column(server_default=func.now(), onupdate=datetime.now)
+    datetime, mapped_column(TIMESTAMP,server_default=func.now(), onupdate=datetime.now)
 ]
 uniq_str = Annotated[str, mapped_column(unique=True, nullable=False)]
 str_null_true = Annotated[str, mapped_column(nullable=True)]
@@ -42,9 +42,20 @@ str_null_true = Annotated[str, mapped_column(nullable=True)]
 class Base(AsyncAttrs, DeclarativeBase):
     __abstract__ = True
 
+    created_at: Mapped[created_at]
+    updated_at: Mapped[updated_at]
+
     @declared_attr.directive
     def __tablename__(cls) -> str:
         return f"{cls.__name__.lower()}s"
 
-    created_at: Mapped[created_at]
-    updated_at: Mapped[updated_at]
+    def to_dict(self) -> dict:
+        result = {}
+        for column in self.__table__.columns:
+            value = getattr(self, column.name)
+            # Автоматически преобразуем datetime в строку
+            if isinstance(value, datetime):
+                result[column.name] = value.isoformat()
+            else:
+                result[column.name] = value
+        return result

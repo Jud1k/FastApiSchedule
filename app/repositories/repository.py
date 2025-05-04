@@ -29,7 +29,7 @@ class StudentRepository(SqlAlchemyRepository[Student]):
 class SubjectRepository(SqlAlchemyRepository[Subject]):
     model = Subject
 
-    async def search_by_name(self, query: str) -> list[Subject]:
+    async def search(self, query: str) -> list[Subject]:
         stmt = select(self.model).where(self.model.name.ilike(f"%{query}%"))
         results = await self.session.execute(stmt)
         subjects = results.scalars().all()
@@ -39,7 +39,7 @@ class SubjectRepository(SqlAlchemyRepository[Subject]):
 class RoomRepository(SqlAlchemyRepository[Room]):
     model = Room
 
-    async def search_by_name(self, query: str) -> list[Room]:
+    async def search(self, query: str) -> list[Room]:
         stmt = select(self.model).where(self.model.name.ilike(f"%{query}%"))
         results = await self.session.execute(stmt)
         rooms = results.scalars().all()
@@ -49,7 +49,7 @@ class RoomRepository(SqlAlchemyRepository[Room]):
 class TeacherRepository(SqlAlchemyRepository[Teacher]):
     model = Teacher
 
-    async def search_by_name(self, query: str) -> list[Teacher]:
+    async def search(self, query: str) -> list[Teacher]:
         stmt = select(self.model).where(self.model.name.ilike(f"%{query}%"))
         results = await self.session.execute(stmt)
         teachers = results.scalars().all()
@@ -59,7 +59,7 @@ class TeacherRepository(SqlAlchemyRepository[Teacher]):
 class GroupRepository(SqlAlchemyRepository[Group]):
     model = Group
 
-    async def search_by_name(self, query: str) -> list[Group]:
+    async def search(self, query: str) -> list[Group]:
         stmt = select(self.model).where(self.model.name.ilike(f"%{query}%"))
         results = await self.session.execute(stmt)
         groups = results.scalars().all()
@@ -91,7 +91,7 @@ class ScheduleRepository(SqlAlchemyRepository[ScheduleLesson]):
                 "type_lesson": lesson.type_lesson,
                 "group": lesson.group.name,
                 "subject": lesson.subject.name,
-                "teacher": f"{lesson.teacher.name}",
+                "teacher": lesson.teacher.name,
                 "room": lesson.room.name,
             }
             for lesson in lessons
@@ -100,7 +100,7 @@ class ScheduleRepository(SqlAlchemyRepository[ScheduleLesson]):
     async def get_all_lessons_wtih_names_by_group_id(
         self,
         group_id: int,
-    ) -> list[dict]:
+    ) -> list[ScheduleLesson]:
         stmt = (
             select(self.model)
             .options(
@@ -121,7 +121,7 @@ class ScheduleRepository(SqlAlchemyRepository[ScheduleLesson]):
                 "day_week": lesson.day_week,
                 "type_lesson": lesson.type_lesson,
                 "subject": lesson.subject.name,
-                "teacher": {lesson.teacher.name},
+                "teacher": lesson.teacher.name,
                 "room": lesson.room.name,
             }
             for lesson in lessons

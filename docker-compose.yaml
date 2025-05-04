@@ -9,10 +9,13 @@ services:
             - .:/app
         environment:
             - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+            - REDIS_URL=redis://${REDIS_HOST}:${REDIS_PORT}/${REDIS_SSL}
         env_file:
-            - .env
+            - .docker.env
         depends_on:
             db:
+                condition: service_healthy
+            redis:
                 condition: service_healthy
         restart: unless-stopped
     db:
@@ -31,6 +34,19 @@ services:
         ports:
             - "5432:5432"  # Только для разработки
         restart: unless-stopped
+    redis:
+        image: redis:7-alpine
+        volumes:
+            - redis_data:/data
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 5s
+            timeout: 3s
+            retries: 5
+        ports:
+            - "6379:6379"
+        restart: unless-stopped
 
 volumes:
     postgres_data:
+    redis_data:

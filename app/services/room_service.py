@@ -1,4 +1,5 @@
 import logging
+
 from app.api.schemas.room import RoomFromDB, RoomToCreate
 from app.exceptions import ConflictError, NotFoundError
 from app.repositories.repository import RoomRepository
@@ -17,11 +18,16 @@ class RoomService:
         return await self.room_repo.get_all()
 
     async def get_one_by_id(self, room_id: int) -> RoomFromDB:
-        record = await self.room_repo.get_one_or_none_by_id(id=room_id)
-        if not record:
-            logger.error(f"Room wtih {room_id} id does not exist")
-            raise NotFoundError("An room with this id does not exist")
-        return record
+        # cache_key = f"room:{room_id}"
+
+        # cached_data = await self.redis.get(cache_key)
+        # if cached_data:
+        #     return RoomFromDB(**json.loads(cached_data))  # Десериализация JSON → Pydantic
+        room = await self.room_repo.get_one_or_none_by_id(id=room_id)
+        if not room:
+            logger.error(f"Room with {room_id} id does not exist")
+            raise NotFoundError("A room with this id does not exist")
+        return room
 
     async def create(self, room_in: RoomToCreate) -> RoomFromDB:
         room = await self.room_repo.get_by_name(name=room_in.name)
@@ -51,5 +57,5 @@ class RoomService:
             raise NotFoundError("An room with this id does not exist")
         return await self.room_repo.delete(id=room_id)
 
-    async def search_rooms_by_name(self, query: str) -> list[RoomFromDB]:
-        return await self.room_repo.search_by_name(query=query)
+    async def search_rooms(self, query: str) -> list[RoomFromDB]:
+        return await self.room_repo.search(query=query)
