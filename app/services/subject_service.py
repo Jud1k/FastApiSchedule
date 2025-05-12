@@ -24,7 +24,7 @@ class SubjectService:
         return subject
 
     async def create(self, subject_in: SubjectToCreate) -> SubjectFromDB:
-        subject = await self.subject_repo.get_by_name(name=subject_in.name)
+        subject = await self.subject_repo.get_one_or_none(filters=subject_in)
         if subject:
             logger.error(f"Subject with {subject_in.name} name already exist")
             raise ConflictError("An subject with this name already exist")

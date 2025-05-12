@@ -1,11 +1,6 @@
-import logging
-from functools import wraps
-from typing import Callable, Awaitable, Any
-from fastapi import Depends
 from app.core.config import settings
 from app.redis.redis_client import RedisClient
 from redis.asyncio import Redis
-logger = logging.getLogger(__name__)
 
 redis_manager = RedisClient(
     host=settings.REDIS_HOST,

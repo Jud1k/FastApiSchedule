@@ -4,6 +4,7 @@ from app.redis.custom_redis import CustomRedis
 
 logger = logging.getLogger(__name__)
 
+
 class RedisClient:
     """Класс для управления подключением к Redis с поддержкой явного и автоматического управления."""
 
@@ -17,6 +18,7 @@ class RedisClient:
         self.port = port
         self.ssl_flag = ssl_flag
         self._client = None
+
     async def connect(self):
         """Создает и сохраняет подключение к Redis."""
         if self._client is None:
@@ -27,6 +29,7 @@ class RedisClient:
                     ssl=self.ssl_flag,
                     retry_on_timeout=True,
                     health_check_interval=30,
+                    decode_responses=True,
                 )
                 # Проверяем подключение
                 await self._client.ping()

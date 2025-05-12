@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.params import Query
 
 from app.api.schemas.subject import SubjectFromDB, SubjectToCreate
-from app.api.dependecy import get_subject_service
+from app.api.dependencies.service_dep import get_subject_service
 from app.exceptions import ConflictError, NotFoundError
 from app.services.subject_service import SubjectService
 

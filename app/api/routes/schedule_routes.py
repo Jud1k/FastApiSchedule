@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from app.api.dependecy import get_schedule_service
+from app.api.dependencies.service_dep import get_schedule_service
 from app.api.schemas.schedule import (
     ScheduleByGroupId,
     ScheduleFromDB,
