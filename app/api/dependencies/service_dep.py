@@ -1,5 +1,6 @@
 from fastapi import Depends
 from app.redis.custom_redis import CustomRedis
+from app.services.auth_service import AuthService
 from app.services.group_service import GroupService
 from app.services.room_service import RoomService
 from app.services.schedule_service import ScheduleService
@@ -9,12 +10,17 @@ from app.services.teacher_service import TeacherService
 from app.db.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.redis.manager import get_redis
+from app.services.user_service import UserService
 
 
 async def get_group_service(
     session: AsyncSession = Depends(get_db), redis: CustomRedis = Depends(get_redis)
 ):
     return GroupService(session=session, redis=redis)
+
+
+async def get_auth_service(redis: CustomRedis = Depends(get_redis)):
+    return AuthService(redis=redis)
 
 
 async def get_room_service(session: AsyncSession = Depends(get_db)):
@@ -35,3 +41,7 @@ async def get_teacher_service(session: AsyncSession = Depends(get_db)):
 
 async def get_schedule_service(session: AsyncSession = Depends(get_db)):
     return ScheduleService(session=session)
+
+
+async def get_user_service(session: AsyncSession = Depends(get_db)):
+    return UserService(session=session)

@@ -36,7 +36,7 @@ class GroupService:
         return group
 
     async def create(self, group_in: GroupToCreate) -> GroupFromDB:
-        group = await self.group_repo.get_by_name(name=group_in.name)
+        group = await self.group_repo.get_one_or_none(filters=group_in)
         if group:
             logger.error(f"Group with name {group.name} already exist")
             raise ConflictError("An group with this name already exist")

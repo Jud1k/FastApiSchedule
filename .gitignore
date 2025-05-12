@@ -1,6 +1,6 @@
 # Игнорировать папки __pycache__
 __pycache__/
-
+.pytest_cache
 # Игнорировать скомпилированные файлы Python
 *.pyc
 *.pyo

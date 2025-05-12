@@ -24,13 +24,12 @@ class TeacherService:
         return teacher
 
     async def create(self, teacher_in: TeacherToCreate) -> TeacherFromDB:
-        teacher = await self.teacher_repo.get_by_name(name=teacher_in.name)
+        teacher = await self.teacher_repo.get_one_or_none(filters=teacher_in)
         if teacher:
             logger.error(f"Teacher with {teacher_in.name} name already exist")
             raise ConflictError("An teacher with this name already exist")
         data = teacher_in.model_dump()
         return await self.teacher_repo.create(data=data)
-  
 
     async def update(
         self,
@@ -56,7 +55,6 @@ class TeacherService:
             logger.error(f"Teacher with {teacher_id} does not exist")
             raise NotFoundError("An teacher with this id does not exist")
         return await self.teacher_repo.delete(id=teacher_id)
-
 
     async def search_teachers(self, query: str) -> list[TeacherFromDB]:
         return await self.teacher_repo.search(query=query)

@@ -4,7 +4,7 @@ from fastapi.params import Query
 from app.api.schemas.group import GroupFromDB, GroupToCreate
 from app.exceptions import ConflictError, NotFoundError
 from app.services.group_service import GroupService
-from app.api.dependecy import get_group_service
+from app.api.dependencies.service_dep import get_group_service
 
 router = APIRouter(prefix="/group", tags=["Groups👩‍💻👨‍💻"])
 

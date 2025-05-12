@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.params import Query
 
 from app.api.schemas.teacher import TeacherFromDB, TeacherToCreate
-from app.api.dependecy import get_teacher_service
+from app.api.dependencies.service_dep import get_teacher_service
 from app.exceptions import ConflictError, NotFoundError
 from app.services.teacher_service import TeacherService
 

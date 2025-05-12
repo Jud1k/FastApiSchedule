@@ -18,11 +18,6 @@ class RoomService:
         return await self.room_repo.get_all()
 
     async def get_one_by_id(self, room_id: int) -> RoomFromDB:
-        # cache_key = f"room:{room_id}"
-
-        # cached_data = await self.redis.get(cache_key)
-        # if cached_data:
-        #     return RoomFromDB(**json.loads(cached_data))  # Десериализация JSON → Pydantic
         room = await self.room_repo.get_one_or_none_by_id(id=room_id)
         if not room:
             logger.error(f"Room with {room_id} id does not exist")
@@ -30,7 +25,7 @@ class RoomService:
         return room
 
     async def create(self, room_in: RoomToCreate) -> RoomFromDB:
-        room = await self.room_repo.get_by_name(name=room_in.name)
+        room = await self.room_repo.get_one_or_none(filters=room_in)
         if room:
             logger.error(f"Room with {room_in.name} name already exist")
             raise ConflictError("An room with this name alredy exist")

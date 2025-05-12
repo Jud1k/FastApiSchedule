@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from app.repositories.base_repository import SqlAlchemyRepository
-from app.db.models import Student, Subject, Room, Teacher, Group, ScheduleLesson
+from app.db.models import Role, Student, Subject, Room, Teacher, Group, ScheduleLesson, User
 
 
 class StudentRepository(SqlAlchemyRepository[Student]):
@@ -126,3 +126,9 @@ class ScheduleRepository(SqlAlchemyRepository[ScheduleLesson]):
             }
             for lesson in lessons
         )
+
+class UserRepository(SqlAlchemyRepository[User]):
+    model = User
+
+class RoleRepository(SqlAlchemyRepository[Role]):
+    model = Role

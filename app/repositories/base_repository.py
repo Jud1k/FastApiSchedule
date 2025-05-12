@@ -1,5 +1,6 @@
 from typing import Type, TypeVar, Generic, Optional
 import logging
+from pydantic import BaseModel
 from sqlalchemy.future import select
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from sqlalchemy import delete
@@ -25,15 +26,17 @@ class SqlAlchemyRepository(Generic[T]):
         return res.scalars().all()
 
     async def get_one_or_none_by_id(self, id: int) -> Optional[T]:
-        res = await self.session.execute(select(self.model).filter(self.model.id == id))
+        stmt=select(self.model).filter(self.model.id==id)
+        res = await self.session.execute(stmt)
         return res.scalar_one_or_none()
 
-    async def get_by_name(self, name: str) -> Optional[T]:
-        res = await self.session.execute(
-            select(self.model).filter(self.model.name == name)
-        )
-        return res.scalar_one_or_none()
-
+    async def get_one_or_none(self, filters:BaseModel) -> Optional[T]:
+        filters_dict=filters.model_dump(exclude_unset=True)
+        stmt = select(self.model).filter_by(**filters_dict)
+        res = await self.session.execute(stmt)
+        record = res.scalar_one_or_none()
+        return record
+        
     async def create(self, data: dict) -> T:
         value = self.model(**data)
         self.session.add(value)
@@ -53,6 +56,6 @@ class SqlAlchemyRepository(Generic[T]):
         return data
 
     async def delete(self, id: int) -> int:
-        query = delete(self.model).filter(self.model.id == id)
-        await self.session.execute(query)
+        stmt = delete(self.model).filter(self.model.id == id)
+        await self.session.execute(stmt)
         await self.session.flush()

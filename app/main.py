@@ -1,16 +1,12 @@
 import time
 import uuid
-import redis
 import uvicorn
 import logging
-from logging.handlers import RotatingFileHandler
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import ValidationError
-from redis.asyncio import Redis
 
 from app.api.routes.student_routes import router as student_router
 from app.api.routes.teacher_routes import router as teacher_router
@@ -18,6 +14,7 @@ from app.api.routes.subject_routes import router as subject_router
 from app.api.routes.room_routes import router as room_router
 from app.api.routes.group_routes import router as group_router
 from app.api.routes.schedule_routes import router as schedule_router
+from app.api.routes.user_routes import router as user_router
 from app.logging import configure_logging
 from app.redis.manager import redis_manager
 
@@ -37,13 +34,13 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-app.include_router(student_router)
-app.include_router(teacher_router)
-app.include_router(subject_router)
-app.include_router(room_router)
-app.include_router(group_router)
-app.include_router(schedule_router)
-
+app.include_router(student_router, prefix="/api/v1")
+app.include_router(teacher_router, prefix="/api/v1")
+app.include_router(subject_router, prefix="/api/v1")
+app.include_router(room_router, prefix="/api/v1")
+app.include_router(group_router, prefix="/api/v1")
+app.include_router(schedule_router, prefix="/api/v1")
+app.include_router(user_router, prefix="/api/v1")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -51,6 +48,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 
 @app.middleware("http")

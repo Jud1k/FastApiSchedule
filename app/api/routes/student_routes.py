@@ -5,7 +5,7 @@ from app.api.schemas.student import (
     StudentToCreate,
     StudentsWithGroupName,
 )
-from app.api.dependecy import get_student_service
+from app.api.dependencies.service_dep import get_student_service
 from app.services.student_services import StudentService
 
 router = APIRouter(prefix="/student", tags=["Students🧑"])

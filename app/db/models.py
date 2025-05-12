@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import ForeignKey, Date
+from sqlalchemy import ForeignKey, Date, text
 from app.db.database import Base, uniq_str, str_null_true, int_pk
 from datetime import date
 
@@ -39,7 +39,7 @@ class Group(Base):
 
 class Teacher(Base):
     id: Mapped[int_pk]
-    name:Mapped[uniq_str]
+    name: Mapped[uniq_str]
     date_of_birth: Mapped[Date] = mapped_column(Date)
     email: Mapped[uniq_str]
     phone: Mapped[uniq_str]
@@ -74,3 +74,24 @@ class ScheduleLesson(Base):
 
     group_id: Mapped[int] = mapped_column(ForeignKey("groups.id"))
     group: Mapped["Group"] = relationship("Group", back_populates="lessons")
+
+
+class User(Base):
+    id: Mapped[int_pk]
+    email: Mapped[uniq_str]
+    password: Mapped[str]
+
+    role_id: Mapped[int] = mapped_column(
+        ForeignKey("roles.id"), default=1, server_default=text("1")
+    )
+    role: Mapped["Role"] = relationship("Role", back_populates="roles", lazy="joined")
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(id={self.id})"
+
+
+class Role(Base):
+    id: Mapped[int_pk]
+    name: Mapped[uniq_str]
+
+    roles: Mapped[list["User"]] = relationship("User", back_populates="role")

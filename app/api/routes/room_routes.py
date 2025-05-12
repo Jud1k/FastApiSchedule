@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.params import Query
 
 from app.api.schemas.room import RoomFromDB, RoomToCreate
-from app.api.dependecy import get_room_service
+from app.api.dependencies.service_dep import get_room_service
 from app.exceptions import ConflictError, NotFoundError
 from app.services.room_service import RoomService
 
