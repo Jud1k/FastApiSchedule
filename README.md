@@ -25,11 +25,16 @@
 4. Настройте переменные окружения:
    Создайте файл `.env` в корне проекта на основе `.env.example`:
    ```
-    DB_HOST=localhost
-    DB_PORT=5432
-    DB_USER=username
-    DB_PASSWORD=password
-    DB_NAME=your_db_name
+   DB_HOST=localhost
+   DB_PORT=5432
+   DB_USER=username
+   DB_PASSWORD=password
+   DB_NAME=your_db_name
+   REDIS_PORT=6379
+   REDIS_SSL=0
+   REDIS_HOST=localhost
+   SECRET_KEY=your_secret_key
+   ALGORITHM=HS256
    ```
 
 ## 🚀 Запуск проекта
