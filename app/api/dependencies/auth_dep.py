@@ -1,62 +1,52 @@
 import logging
-from datetime import datetime, timezone
-from jose import jwt, JWTError, ExpiredSignatureError
+from jose import JWTError, ExpiredSignatureError
 from fastapi import Request, Depends
 
-from app.core.config import settings
-from app.api.dependencies.service_dep import get_user_service
+from app.api.schemas.user import UserPublic
+from app.api.dependencies.service_dep import get_token_service
 from app.db.models import User
-from app.services.user_service import UserService
-from app.services.auth_service import AuthService
+from app.services.token_service import TokenService
 from app.exceptions import (
     ForbiddenException,
+    MissingCoockies,
     NoJwtException,
-    NoUserIdException,
     TokenExpiredException,
     TokenNoFound,
-    UserNotFoundException,
 )
 
 logger = logging.getLogger(__name__)
 
 
 def get_access_token(request: Request):
-    token = request.cookies.get("user_access_token")
-    if not token:
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
         raise TokenNoFound
-    return token
+    access_token = auth_header.split(" ")[1]
+    return access_token
 
 
 def get_refresh_token(request: Request):
-    token = request.cookies.get("user_refresh_token")
+    token = request.cookies.get("refresh_token") 
     if not token:
-        raise TokenNoFound
+        raise MissingCoockies
     return token
 
 
 async def get_current_user(
     token: str = Depends(get_access_token),
-    service: UserService = Depends(get_user_service),
-) -> User:
+    token_service: TokenService = Depends(get_token_service),
+) -> UserPublic:
     try:
-        payload = jwt.decode(
-            token=token, key=settings.SECRET_KEY, algorithms=settings.ALGORITHM
-        )
+        payload = token_service._decode_token(token=token)
     except ExpiredSignatureError:
         raise TokenExpiredException
     except JWTError:
         raise NoJwtException
-    expire: str = payload.get("exp")
-    expire_time = datetime.fromtimestamp(int(expire), tz=timezone.utc)
-    if (not expire) or (expire_time < datetime.now(timezone.utc)):
-        raise TokenExpiredException
-    user_id: str = payload.get("sub")
-    if not user_id:
-        raise NoUserIdException
-    user = await service.get_one_or_none_by_id(user_id=int(user_id))
-    if not user:
-        raise UserNotFoundException
-    return user
+    # expire: str = payload.get("exp")
+    # expire_time = datetime.fromtimestamp(int(expire), tz=timezone.utc)
+    # if (not expire) or (expire_time < datetime.now(timezone.utc)):
+    #     raise TokenExpiredException
+    return UserPublic(email=payload.email,id=payload.sub)
 
 
 async def get_current_admin_user(current_user: User = Depends(get_current_user)):

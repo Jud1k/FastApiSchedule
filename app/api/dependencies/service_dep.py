@@ -1,6 +1,6 @@
 from fastapi import Depends
 from app.redis.custom_redis import CustomRedis
-from app.services.auth_service import AuthService
+from app.services.token_service import TokenService
 from app.services.group_service import GroupService
 from app.services.room_service import RoomService
 from app.services.schedule_service import ScheduleService
@@ -19,8 +19,8 @@ async def get_group_service(
     return GroupService(session=session, redis=redis)
 
 
-async def get_auth_service(redis: CustomRedis = Depends(get_redis)):
-    return AuthService(redis=redis)
+async def get_token_service(redis: CustomRedis = Depends(get_redis)):
+    return TokenService(redis=redis)
 
 
 async def get_room_service(session: AsyncSession = Depends(get_db)):

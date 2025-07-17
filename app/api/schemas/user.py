@@ -1,54 +1,56 @@
-from typing import Self
+from typing import Optional
 from pydantic import (
     BaseModel,
     EmailStr,
     Field,
     ConfigDict,
-    model_validator,
-    computed_field
 )
 
-from app.core.security import get_password_hash
 
-
-class EmailModel(BaseModel):
+class UserBase(BaseModel):
     email: EmailStr
     model_config = ConfigDict(from_attributes=True)
 
 
-class UserRegister(EmailModel):
-    password: str = Field(
-        min_length=5, max_length=50, description="Password 5-50 symbols"
-    )
-    confirm_password: str = Field(
-        min_length=5, max_length=50, description="Repeat password"
-    )
-
-
-class UserToDB(EmailModel):
+class UserCreate(UserBase):
     password: str = Field(
         min_length=5, max_length=50, description="Password 5-50 symbols"
     )
 
 
-class UserAuth(EmailModel):
-    password: str = Field(min_length=5)
+class UserToDB(UserBase):
+    id: int
+    hashed_password: str
+
+
+class UserFromDB(UserBase):
+    id: int
+    hashed_password: str
+    role_id: int
+
+
+class UserPublic(UserBase):
+    id: int
+
+
+class TokenPayload(BaseModel):
+    sub: int  # user_id
+    email: EmailStr
+    exp: int
+    jti: Optional[str] = None  # Для refresh-токенов
+    type: Optional[str] = None  # "access" или "refresh"
+
+
+class TokenPair(BaseModel):
+    access_token: str
+    refresh_token: str
+
+
+class AuthResponse(TokenPair):
+    user: UserPublic
 
 
 class RoleModel(BaseModel):
     id: int = Field(description="Role id")
     name: str = Field(description="Role name")
     model_config = ConfigDict(from_attributes=True)
-
-
-class UserInfo(UserAuth):
-    id: int
-    role: RoleModel = Field(exclude=True)
-
-    @computed_field
-    def role_name(self)->str:
-        return self.role.name
-    
-    @computed_field
-    def role_id(self)->int:
-        return self.role.id
