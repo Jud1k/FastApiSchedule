@@ -1,5 +1,8 @@
 from passlib.context import CryptContext
 from fastapi.responses import Response
+from jose import jwt
+
+from app.core.config import settings
 
 
 async def authenticate_user(user, password):
@@ -8,24 +11,6 @@ async def authenticate_user(user, password):
     ):
         return None
     return user
-
-
-def set_tokens_to_cookie(response: Response, tokens: dict) -> None:
-    response.set_cookie(
-        key="user_access_token",
-        value=tokens["access_token"],
-        httponly=True,
-        secure=True,
-        samesite="lax",
-    )
-
-    response.set_cookie(
-        key="user_refresh_token",
-        value=tokens["refresh_token"],
-        httponly=True,
-        secure=True,
-        samesite="lax",
-    )
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -37,3 +22,9 @@ def get_password_hash(password: str):
 
 def verify_password(plain_password: str, hashed_password: str):
     return pwd_context.verify(plain_password, hashed_password)
+
+
+def decode_token(token: str):
+    return jwt.decode(
+        token=token, key=settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+    )

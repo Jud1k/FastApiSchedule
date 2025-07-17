@@ -1,39 +1,46 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
-from app.api.schemas.user import EmailModel, UserInfo, UserAuth
-from app.api.dependencies.service_dep import get_auth_service, get_user_service
-from app.api.dependencies.auth_dep import get_current_user, get_refresh_token
-from app.api.schemas.user import UserRegister
-from app.core.security import authenticate_user, get_password_hash, set_tokens_to_cookie
+from app.api.schemas.user import (
+    AuthResponse,
+    UserBase,
+    UserCreate,
+    UserFromDB,
+    UserPublic,
+)
+from app.api.dependencies.service_dep import get_token_service, get_user_service
+from app.api.dependencies.auth_dep import (
+    get_current_user,
+    get_refresh_token,
+)
+from app.core.security import (
+    authenticate_user,
+    get_password_hash,
+)
 from app.db.models import User
-from app.services.auth_service import AuthService
+from app.services.token_service import TokenService
 from app.services.user_service import UserService
 from app.exceptions import (
     IncorrectEmailOrPasswordException,
-    PasswordsDoNotMatch,
     UserAlreadyExistsException,
 )
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
 @router.post("/register/")
 async def register_user(
-    user_data: UserRegister, service: UserService = Depends(get_user_service)
-) -> dict:
-    if user_data.password != user_data.confirm_password:
-        raise PasswordsDoNotMatch
-    user = await service.get_one_or_none(filters=EmailModel(email=user_data.email))
+    user_data: UserCreate, service: UserService = Depends(get_user_service)
+):
+    user = await service.get_one_or_none(filters=UserBase(email=user_data.email))
     if user:
         raise UserAlreadyExistsException
     user_data.password = get_password_hash(user_data.password)
     user_data_dict = user_data.model_dump()
-    user_data_dict.pop("confirm_password", None)
     await service.create(user_in=user_data_dict)
-    return {"message": "You are successfully registered"}
+    return {"msg": "You sucessfuly register"}
 
 
 @router.get("/debug/cookies")
@@ -41,56 +48,88 @@ async def debug_cookies(request: Request):
     return {"cookies": request.cookies, "headers": dict(request.headers)}
 
 
-@router.post("/login/")
+@router.post("/login/", response_model=AuthResponse)
 async def login_user(
     response: Response,
-    user_data: UserAuth,
-    auth_service: AuthService = Depends(get_auth_service),
+    user_data: UserCreate,
+    auth_service: TokenService = Depends(get_token_service),
     user_service: UserService = Depends(get_user_service),
 ) -> dict:
-    user = await user_service.get_one_or_none(filters=EmailModel(email=user_data.email))
+    user = await user_service.get_one_or_none(filters=UserBase(email=user_data.email))
     if not user or not await authenticate_user(user=user, password=user_data.password):
         raise IncorrectEmailOrPasswordException
-    tokens = await auth_service.create_tokens(user_id=user.id)
-    set_tokens_to_cookie(response=response,tokens=tokens)
-    return {"ok": "True", "message": "Authorization successful"}
+    user_dto = UserPublic(email=user.email, id=user.id)
+    tokens = await auth_service.create_tokens(user_id=user.id, email=user.email)
+    response.set_cookie(
+        key="refresh_token",
+        value=tokens.refresh_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        max_age=30 * 24 * 60 * 60,
+    )
+    return AuthResponse(
+        access_token=tokens.access_token,
+        refresh_token=tokens.refresh_token,
+        user=user_dto,
+    )
 
 
 @router.post("/logout/")
 async def logout_user(
     response: Response,
     token: str = Depends(get_refresh_token),
-    auth_service: AuthService = Depends(get_auth_service),
+    token_service: TokenService = Depends(get_token_service),
 ) -> dict:
-    await auth_service.revoke_refresh_token(token=token)
-    response.delete_cookie("user_access_token")
-    response.delete_cookie("user_refresh_token")
+    try:
+        await token_service.revoke_refresh_token(token=token)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    response.delete_cookie("refresh_token")
     return {"message": "The user has successfully logout"}
 
 
-@router.get("/me/")
-async def get_me(user_data: User = Depends(get_current_user)) -> UserInfo:
-    return UserInfo.model_validate(user_data)
-
-
-@router.get("/all_users/")
+@router.get("/all_users/", response_model=list[UserFromDB])
 async def get_all_users(
     user_service: UserService = Depends(get_user_service),
-) -> list[UserInfo]:
+) -> list[UserFromDB]:
     return await user_service.get_all()
 
 
-@router.post("/refresh/")
+@router.get("/check/", response_model=UserPublic)
+async def check_auth(user_data: User = Depends(get_current_user)):
+    return UserPublic.model_validate(user_data)
+
+
+@router.get("/refresh/", response_model=AuthResponse)
 async def process_refresh_token(
     response: Response,
     token: str = Depends(get_refresh_token),
-    auth_service: AuthService = Depends(get_auth_service),
-) -> dict:
+    token_service: TokenService = Depends(get_token_service),
+    user_service: UserService = Depends(get_user_service),
+) -> AuthResponse:
     try:
-        payload = await auth_service.validate_refresh_token(token=token)
+        payload = await token_service.validate_refresh_token(token=token)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
-    await auth_service.revoke_refresh_token(token=token)
-    tokens = await auth_service.create_tokens(user_id=int(payload["sub"]))
-    set_tokens_to_cookie(response=response,tokens=tokens)
-    return {"message": "Tokens refreshed"}
+    user = await user_service.get_one_or_none_by_id(user_id=payload.sub)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+    user_dto = UserPublic(email=user.email, id=user.id)
+    await token_service.revoke_refresh_token(token=token)
+    tokens = await token_service.create_tokens(user_id=payload.sub, email=user.email)
+    response.set_cookie(
+        key="refresh_token",
+        value=tokens.refresh_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        max_age=30 * 24 * 60 * 60,
+    )
+    return {
+        "access_token": tokens.access_token,
+        "refresh_token": tokens.refresh_token,
+        "user": user_dto,
+    }

@@ -50,6 +50,11 @@ TokenNoFound = HTTPException(
     detail="The token missing from header",
 )
 
+MissingCoockies = HTTPException(
+    status_code=status.HTTP_400_BAD_REQUEST,
+    detail="The token missing from coockies",
+)
+
 NoJwtException = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
     detail="The token is not valid",

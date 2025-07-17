@@ -2,24 +2,25 @@ from datetime import datetime, timezone, timedelta
 from uuid import uuid4
 from jose import jwt
 
+from app.api.schemas.user import TokenPair, TokenPayload
 from app.core.config import settings
 from app.redis.custom_redis import CustomRedis
 
 
-class AuthService:
+class TokenService:
     def __init__(self, redis: CustomRedis):
         self.redis = redis
 
-    async def create_tokens(self, user_id: int) -> dict:
+    async def create_tokens(self, user_id: int, email: str) -> TokenPair:
         jti = uuid4().hex
 
         access_token = self._create_token(
-            data={"sub": str(user_id), "type": "access"},
-            expires_delta=timedelta(minutes=30),
+            data={"sub": str(user_id), "email": email, "type": "access"},
+            expires_delta=timedelta(minutes=15),
         )
 
         refresh_token = self._create_token(
-            data={"sub": str(user_id), "type": "refresh", "jti": jti},
+            data={"sub": str(user_id), "email": email, "type": "refresh", "jti": jti},
             expires_delta=timedelta(days=7),
         )
 
@@ -29,7 +30,7 @@ class AuthService:
             value=str(user_id),
         )
 
-        return {"access_token": access_token, "refresh_token": refresh_token}
+        return TokenPair(access_token=access_token, refresh_token=refresh_token)
 
     def _create_token(self, data: dict, expires_delta: timedelta) -> str:
         now = datetime.now(timezone.utc)
@@ -39,22 +40,25 @@ class AuthService:
 
     async def revoke_refresh_token(self, token: str) -> None:
         payload = self._decode_token(token)
-        if payload.get("type") != "refresh":
+        if payload.type != "refresh":
             raise ValueError("Invalid token type")
-        jti = payload.get("jti")
+        jti = payload.jti
         if not jti:
             raise ValueError("Invalid token")
         await self.redis.delete_key(f"refresh_token:{jti}")
 
-    def _decode_token(self, token: str) -> dict:
-        return jwt.decode(token, key=settings.SECRET_KEY, algorithms=settings.ALGORITHM)
+    def _decode_token(self, token: str) -> TokenPayload:
+        payload = jwt.decode(
+            token, key=settings.SECRET_KEY, algorithms=settings.ALGORITHM
+        )
+        return TokenPayload(**payload)
 
-    async def validate_refresh_token(self, token: str) -> dict:
+    async def validate_refresh_token(self, token: str) -> TokenPayload:
         payload = self._decode_token(token)
-        if payload.get("type") != "refresh":
+        if payload.type != "refresh":
             raise ValueError("Invalid token type")
 
-        jti = payload.get("jti")
+        jti = payload.jti
         if not jti or not await self.redis.exists(f"refresh_token:{jti}"):
             raise ValueError("Token revoked or invalid")
 
