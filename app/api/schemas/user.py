@@ -25,7 +25,7 @@ class UserToDB(UserBase):
 
 class UserFromDB(UserBase):
     id: int
-    hashed_password: str
+    password: str
     role_id: int
 
 

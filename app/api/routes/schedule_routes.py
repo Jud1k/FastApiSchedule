@@ -33,7 +33,7 @@ async def get_all_lessons_with_names(
     return await service.get_all_lessons_with_names()
 
 
-@router.get("/lessons/", response_model=list[ScheduleByGroupId])
+@router.get("/lessons/{group_id}", response_model=list[ScheduleByGroupId])
 async def get_all_lessons_with_names_by_group_id(
     group_id: int,
     service: ScheduleService = Depends(get_schedule_service),

@@ -84,7 +84,7 @@ class User(Base):
     role_id: Mapped[int] = mapped_column(
         ForeignKey("roles.id"), default=1, server_default=text("1")
     )
-    role: Mapped["Role"] = relationship("Role", back_populates="roles", lazy="joined")
+    role: Mapped["Role"] = relationship("Role", back_populates="users", lazy="joined")
 
     def __repr__(self):
         return f"{self.__class__.__name__}(id={self.id})"
@@ -94,4 +94,4 @@ class Role(Base):
     id: Mapped[int_pk]
     name: Mapped[uniq_str]
 
-    roles: Mapped[list["User"]] = relationship("User", back_populates="role")
+    users: Mapped[list["User"]] = relationship("User", back_populates="role")
