@@ -11,16 +11,22 @@ class TokenService:
     def __init__(self, redis: CustomRedis):
         self.redis = redis
 
-    async def create_tokens(self, user_id: int, email: str) -> TokenPair:
+    async def create_tokens(self, user_id: int, email: str, role: str) -> TokenPair:
         jti = uuid4().hex
 
         access_token = self._create_token(
-            data={"sub": str(user_id), "email": email, "type": "access"},
+            data={"sub": str(user_id), "email": email, "role": role, "type": "access"},
             expires_delta=timedelta(minutes=15),
         )
 
         refresh_token = self._create_token(
-            data={"sub": str(user_id), "email": email, "type": "refresh", "jti": jti},
+            data={
+                "sub": str(user_id),
+                "email": email,
+                "role": role,
+                "type": "refresh",
+                "jti": jti,
+            },
             expires_delta=timedelta(days=7),
         )
 

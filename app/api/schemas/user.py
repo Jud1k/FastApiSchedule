@@ -4,11 +4,18 @@ from pydantic import (
     EmailStr,
     Field,
     ConfigDict,
+    computed_field,
 )
 
 
 class UserBase(BaseModel):
     email: EmailStr
+    model_config = ConfigDict(from_attributes=True)
+
+
+class RoleModel(BaseModel):
+    id: int = Field(description="Role id")
+    name: str = Field(description="Role name")
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -29,16 +36,32 @@ class UserFromDB(UserBase):
     role_id: int
 
 
-class UserPublic(UserBase):
+class UserInfo(UserBase):
     id: int
+    role_name: str
+
+
+class UserWithRole(UserBase):
+    id: int
+    role: RoleModel = Field(exclude=True)
+
+    @computed_field
+    @property
+    def role_name(self) -> str:
+        return self.role.name
+
+
+class UserLogin(UserWithRole):
+    password: str
 
 
 class TokenPayload(BaseModel):
     sub: int  # user_id
     email: EmailStr
+    role: str
     exp: int
-    jti: Optional[str] = None  # Для refresh-токенов
-    type: Optional[str] = None  # "access" или "refresh"
+    jti: Optional[str] = None
+    type: Optional[str] = None
 
 
 class TokenPair(BaseModel):
@@ -47,10 +70,4 @@ class TokenPair(BaseModel):
 
 
 class AuthResponse(TokenPair):
-    user: UserPublic
-
-
-class RoleModel(BaseModel):
-    id: int = Field(description="Role id")
-    name: str = Field(description="Role name")
-    model_config = ConfigDict(from_attributes=True)
+    user: UserWithRole

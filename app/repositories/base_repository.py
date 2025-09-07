@@ -2,7 +2,6 @@ from typing import Type, TypeVar, Generic, Optional
 import logging
 from pydantic import BaseModel
 from sqlalchemy.future import select
-from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -34,8 +33,8 @@ class SqlAlchemyRepository(Generic[T]):
         filters_dict=filters.model_dump(exclude_unset=True)
         stmt = select(self.model).filter_by(**filters_dict)
         res = await self.session.execute(stmt)
-        record = res.scalar_one_or_none()
-        return record
+        return res.scalar_one_or_none()
+       
         
     async def create(self, data: dict) -> T:
         value = self.model(**data)

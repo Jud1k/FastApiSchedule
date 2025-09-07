@@ -2,7 +2,7 @@ import logging
 from jose import JWTError, ExpiredSignatureError
 from fastapi import Request, Depends
 
-from app.api.schemas.user import UserPublic
+from app.api.schemas.user import UserInfo, UserWithRole
 from app.api.dependencies.service_dep import get_token_service
 from app.db.models import User
 from app.services.token_service import TokenService
@@ -35,18 +35,14 @@ def get_refresh_token(request: Request):
 async def get_current_user(
     token: str = Depends(get_access_token),
     token_service: TokenService = Depends(get_token_service),
-) -> UserPublic:
+) -> UserInfo:
     try:
         payload = token_service._decode_token(token=token)
     except ExpiredSignatureError:
         raise TokenExpiredException
     except JWTError:
         raise NoJwtException
-    # expire: str = payload.get("exp")
-    # expire_time = datetime.fromtimestamp(int(expire), tz=timezone.utc)
-    # if (not expire) or (expire_time < datetime.now(timezone.utc)):
-    #     raise TokenExpiredException
-    return UserPublic(email=payload.email,id=payload.sub)
+    return UserInfo(email=payload.email,id=int(payload.sub),role_name=payload.role)
 
 
 async def get_current_admin_user(current_user: User = Depends(get_current_user)):
