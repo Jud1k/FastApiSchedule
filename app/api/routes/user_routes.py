@@ -6,7 +6,8 @@ from app.api.schemas.user import (
     UserBase,
     UserCreate,
     UserFromDB,
-    UserPublic,
+    UserInfo,
+    UserWithRole,
 )
 from app.api.dependencies.service_dep import get_token_service, get_user_service
 from app.api.dependencies.auth_dep import (
@@ -55,11 +56,13 @@ async def login_user(
     auth_service: TokenService = Depends(get_token_service),
     user_service: UserService = Depends(get_user_service),
 ) -> dict:
-    user = await user_service.get_one_or_none(filters=UserBase(email=user_data.email))
+    user = await user_service.get_user_for_login(
+        filters=UserBase(email=user_data.email)
+    )
     if not user or not await authenticate_user(user=user, password=user_data.password):
         raise IncorrectEmailOrPasswordException
-    user_dto = UserPublic(email=user.email, id=user.id)
-    tokens = await auth_service.create_tokens(user_id=user.id, email=user.email)
+    user_dto = UserWithRole.model_validate(user)
+    tokens = await auth_service.create_tokens(user_id=user.id, email=user.email,role=user.role_name)
     response.set_cookie(
         key="refresh_token",
         value=tokens.refresh_token,
@@ -96,9 +99,9 @@ async def get_all_users(
     return await user_service.get_all()
 
 
-@router.get("/check/", response_model=UserPublic)
+@router.get("/check/", response_model=UserInfo)
 async def check_auth(user_data: User = Depends(get_current_user)):
-    return UserPublic.model_validate(user_data)
+    return user_data
 
 
 @router.get("/refresh/", response_model=AuthResponse)
@@ -112,14 +115,13 @@ async def process_refresh_token(
         payload = await token_service.validate_refresh_token(token=token)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
-    user = await user_service.get_one_or_none_by_id(user_id=payload.sub)
+    user = await user_service.get_user_by_id(user_id=payload.sub)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
-    user_dto = UserPublic(email=user.email, id=user.id)
     await token_service.revoke_refresh_token(token=token)
-    tokens = await token_service.create_tokens(user_id=payload.sub, email=user.email)
+    tokens = await token_service.create_tokens(user_id=payload.sub, email=user.email,role=user.role_name)
     response.set_cookie(
         key="refresh_token",
         value=tokens.refresh_token,
@@ -131,5 +133,5 @@ async def process_refresh_token(
     return {
         "access_token": tokens.access_token,
         "refresh_token": tokens.refresh_token,
-        "user": user_dto,
+        "user": user,
     }
