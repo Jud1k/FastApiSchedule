@@ -4,8 +4,8 @@ from sqlalchemy.exc import IntegrityError
 
 
 @pytest.mark.asyncio
-async def test_create_get(db):
-    repo = GroupRepository(db)
+async def test_create_get(session):
+    repo = GroupRepository(session)
 
     # Test create
     group = await repo.create({"name": "Group 1"})
@@ -19,8 +19,8 @@ async def test_create_get(db):
 
 
 @pytest.mark.asyncio
-async def test_create_get_all(db):
-    repo = GroupRepository(db)
+async def test_create_get_all(session):
+    repo = GroupRepository(session)
     await repo.create({"name": "Group 1"})
     groups = await repo.get_all()
     assert len(groups) > 0
@@ -28,16 +28,16 @@ async def test_create_get_all(db):
 
 
 @pytest.mark.asyncio
-async def test_create_with_duplicates(db):
-    repo = GroupRepository(db)
+async def test_create_with_duplicates(session):
+    repo = GroupRepository(session)
     await repo.create({"name": "Group1"})
     with pytest.raises(IntegrityError):
         await repo.create({"name": "Group1"})
 
 
 @pytest.mark.asyncio
-async def test_create_delete(db):
-    repo = GroupRepository(db)
+async def test_create_delete(session):
+    repo = GroupRepository(session)
     group_in = await repo.create({"name": "Group1"})
     await repo.delete(group_in.id)
     group = await repo.get_one_or_none_by_id(group_in.id)
@@ -45,8 +45,8 @@ async def test_create_delete(db):
 
 
 @pytest.mark.asyncio
-async def test_create_update(db):
-    repo = GroupRepository(db)
+async def test_create_update(session):
+    repo = GroupRepository(session)
     group_in = await repo.create({"name": "Group1"})
     update_data = {"name": "Update Group1"}
     upd_group = await repo.update(group_in, update_data)
@@ -55,8 +55,8 @@ async def test_create_update(db):
 
 
 @pytest.mark.asyncio
-async def test_update_with_duplicates(db):
-    repo = GroupRepository(db)
+async def test_update_with_duplicates(session):
+    repo = GroupRepository(session)
     await repo.create({"name": "Group1"})
     group_in = await repo.create({"name": "Group2"})
     update_data = {"name": "Group1"}
@@ -69,8 +69,8 @@ async def test_update_with_duplicates(db):
     "search_term,expected_count",
     [("Gr", 3), ("Group1", 1), ("unknown", 0), ("", 3)],
 )
-async def test_search_by_name(db, search_term, expected_count):
-    repo = GroupRepository(db)
+async def test_search_by_name(session, search_term, expected_count):
+    repo = GroupRepository(session)
     await repo.create_many(
         [
             {"name": "Group1"},

@@ -2,6 +2,7 @@ import pytest
 from sqlalchemy import StaticPool
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from app.db.database import Base
+from tests.factories import RoomFactory
 
 
 @pytest.fixture(scope="session")
@@ -27,7 +28,7 @@ async def session_maker(engine):
 
 
 @pytest.fixture
-async def db(session_maker):
+async def session(session_maker):
     async with session_maker() as session:
         try:
             yield session
@@ -36,3 +37,7 @@ async def db(session_maker):
             raise
         finally:
             await session.close()
+
+@pytest.fixture
+def room(session):
+    return RoomFactory()
