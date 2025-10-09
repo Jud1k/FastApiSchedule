@@ -1,11 +1,11 @@
 from passlib.context import CryptContext
-from fastapi.responses import Response
 from jose import jwt
 
+from app.api.schemas.user import UserLogin
 from app.core.config import settings
 
 
-async def authenticate_user(user, password:str):
+async def authenticate_user(user:UserLogin, password:str):
     if not verify_password(
         plain_password=password, hashed_password=user.password
     ):

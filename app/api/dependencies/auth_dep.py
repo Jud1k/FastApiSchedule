@@ -2,7 +2,7 @@ import logging
 from jose import JWTError, ExpiredSignatureError
 from fastapi import Request, Depends
 
-from app.api.schemas.user import UserInfo, UserWithRole
+from app.api.schemas.user import UserInfo
 from app.api.dependencies.service_dep import get_token_service
 from app.db.models import User
 from app.services.token_service import TokenService

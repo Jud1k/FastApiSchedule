@@ -36,7 +36,6 @@ updated_at = Annotated[
     datetime, mapped_column(TIMESTAMP,server_default=func.now(), onupdate=datetime.now)
 ]
 uniq_str = Annotated[str, mapped_column(unique=True, nullable=False)]
-str_null_true = Annotated[str, mapped_column(nullable=True)]
 
 
 class Base(AsyncAttrs, DeclarativeBase):

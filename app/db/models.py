@@ -1,7 +1,6 @@
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey, Date, text
-from app.db.database import Base, uniq_str, str_null_true, int_pk
-from datetime import date
+from app.db.database import Base, uniq_str, int_pk
 
 
 class Student(Base):
