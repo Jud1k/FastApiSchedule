@@ -27,7 +27,8 @@ class Subject(Base):
 class Group(Base):
     id: Mapped[int_pk]
     name: Mapped[uniq_str]
-
+    course: Mapped[int]
+    institute: Mapped[str]
     students: Mapped[list["Student"]] = relationship(
         back_populates="group", cascade="all,delete-orphan"
     )
