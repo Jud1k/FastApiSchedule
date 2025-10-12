@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.params import Query
 
-from app.api.schemas.group import GroupFromDB, GroupToCreate
+from app.api.schemas.group import GroupFromDB, GroupSummary, GroupToCreate
 from app.exceptions import ConflictError, NotFoundError
 from app.services.group_service import GroupService
 from app.api.dependencies.service_dep import get_group_service
@@ -15,6 +15,11 @@ async def search_groups_by_name(
     service: GroupService = Depends(get_group_service),
 ):
     return await service.search_groups(query=query)
+
+
+@router.get("/summary/",response_model=list[GroupSummary])
+async def get_groups_summary(service: GroupService = Depends(get_group_service)):
+    return await service.get_groups_summary()
 
 
 @router.get("/", response_model=list[GroupFromDB])

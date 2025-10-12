@@ -1,4 +1,5 @@
-from sqlalchemy import select
+import logging
+from sqlalchemy import select, func, text
 from sqlalchemy.orm import joinedload
 from app.repositories.base_repository import SqlAlchemyRepository
 from app.db.models import (
@@ -11,6 +12,8 @@ from app.db.models import (
     ScheduleLesson,
     User,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class StudentRepository(SqlAlchemyRepository[Student]):
@@ -72,6 +75,22 @@ class GroupRepository(SqlAlchemyRepository[Group]):
         stmt = select(self.model).where(self.model.name.ilike(f"%{query}%"))
         results = await self.session.execute(stmt)
         groups = results.scalars().all()
+        return groups
+
+    async def get_groups_summary(self) -> list[dict]:
+        stmt = (
+            select(
+                self.model.id,
+                self.model.name,
+                self.model.course,
+                self.model.institute,
+                func.count(Student.id).label("count_students"),
+            )
+            .outerjoin(self.model.students)
+            .group_by(self.model.id)
+        )
+        results = await self.session.execute(stmt)
+        groups = results.mappings().all()
         return groups
 
 
@@ -139,7 +158,6 @@ class ScheduleRepository(SqlAlchemyRepository[ScheduleLesson]):
 
 class UserRepository(SqlAlchemyRepository[User]):
     model = User
-
 
 
 class RoleRepository(SqlAlchemyRepository[Role]):

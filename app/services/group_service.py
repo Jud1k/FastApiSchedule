@@ -2,7 +2,7 @@ import json
 import logging
 
 from app.redis.custom_redis import CustomRedis
-from app.api.schemas.group import GroupFromDB, GroupToCreate
+from app.api.schemas.group import GroupFromDB, GroupSummary, GroupToCreate
 from app.exceptions import ConflictError, NotFoundError
 from app.repositories.repository import GroupRepository
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -35,6 +35,10 @@ class GroupService:
             raise NotFoundError("An group with this id does not exist")
         return group
 
+    async def get_groups_summary(self)->list[GroupSummary]:
+        groups=await self.group_repo.get_groups_summary()
+        return groups
+    
     async def create(self, group_in: GroupToCreate) -> GroupFromDB:
         group = await self.group_repo.get_one_or_none(filters=group_in)
         if group:
