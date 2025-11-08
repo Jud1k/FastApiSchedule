@@ -1,6 +1,7 @@
 # Игнорировать папки __pycache__
 __pycache__/
 .pytest_cache
+
 # Игнорировать скомпилированные файлы Python
 *.pyc
 *.pyo
@@ -15,11 +16,11 @@ env/
 # Игнорировать файлы настроек IDE
 .vscode/
 
-
-
 # Игнорировать файлы журналов и кэша
 *.log
 *.cache
+.ruff_cache
+.mypy_cache
 
 .env
 .bashrc
