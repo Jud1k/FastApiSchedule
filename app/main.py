@@ -1,22 +1,27 @@
-import time
-import uuid
-import uvicorn
 import logging
+import time
+from typing import Any
+import uuid
+
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, status
-from fastapi.responses import JSONResponse
+
+import uvicorn
+
+from fastapi import FastAPI, Request, Response, status
 from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
-from app.api.routes.student_routes import router as student_router
-from app.api.routes.teacher_routes import router as teacher_router
-from app.api.routes.subject_routes import router as subject_router
-from app.api.routes.room_routes import router as room_router
-from app.api.routes.group_routes import router as group_router
-from app.api.routes.schedule_routes import router as schedule_router
-from app.api.routes.user_routes import router as user_router
-from app.logging import configure_logging
-from app.redis.manager import redis_manager
+from app.auth.user_routes import router as user_router
+from app.building.routes import router as building_router
+from app.config_log import configure_logging
+from app.group.routes import router as group_router
+from app.lesson.routes import router as schedule_router
+from app.room.routes import router as room_router
+from app.shared.redis.manager import redis_manager
+from app.student.routes import router as student_router
+from app.subject.routes import router as subject_router
+from app.teacher.routes import router as teacher_router
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +45,7 @@ app.include_router(subject_router, prefix="/api/v1")
 app.include_router(room_router, prefix="/api/v1")
 app.include_router(group_router, prefix="/api/v1")
 app.include_router(schedule_router, prefix="/api/v1")
+app.include_router(building_router, prefix="/api/v1")
 app.include_router(user_router, prefix="/api/v1")
 
 origins = [
@@ -57,12 +63,12 @@ app.add_middleware(
 
 
 @app.middleware("http")
-async def log_requests(request: Request, call_next):
+async def log_requests(request: Request, call_next)->Response|Any:
     request_id = str(uuid.uuid1())
     logger.info(f"Request started | ID: {request_id} | {request.method} {request.url}")
 
     start_time = time.perf_counter()
-    response = await call_next(request)
+    response: Response = await call_next(request)
     process_time = (time.perf_counter() - start_time) * 1000
 
     logger.info(
@@ -73,7 +79,7 @@ async def log_requests(request: Request, call_next):
 
 
 @app.exception_handler(RequestValidationError)
-async def validation_exception_handler(req: Request, exc: RequestValidationError):
+async def validation_exception_handler(req: Request, exc: RequestValidationError)->JSONResponse:
     logger.error(f"Validation error: {exc.errors()}")
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -82,7 +88,7 @@ async def validation_exception_handler(req: Request, exc: RequestValidationError
 
 
 @app.exception_handler(ResponseValidationError)
-async def validation_exception_handler2(req: Request, exc: ResponseValidationError):
+async def validation_exception_handler2(req: Request, exc: ResponseValidationError)->JSONResponse:
     logger.error(f"Validation error: {exc.errors()}")
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
@@ -91,7 +97,7 @@ async def validation_exception_handler2(req: Request, exc: ResponseValidationErr
 
 
 @app.get("/")
-async def main_page():
+async def main_page()->dict:
     return {"Hi": "Guys"}
 
 
