@@ -10,5 +10,5 @@ class SubjectRepository(SqlAlchemyRepository[Subject]):
     async def search(self, query: str) -> list[Subject]:
         stmt = select(self.model).where(self.model.name.ilike(f"%{query}%"))
         results = await self.session.execute(stmt)
-        subjects = results.scalars().all()
+        subjects = list(results.scalars().all())
         return subjects

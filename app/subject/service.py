@@ -3,7 +3,7 @@ import logging
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.exceptions import ConflictError, NotFoundError
+from app.exceptions import ConflictErr, NotFoundErr
 from app.shared.models import Subject
 from app.subject.repository import SubjectRepository
 from app.subject.schemas import SubjectCreate, SubjectUpdate
@@ -18,21 +18,19 @@ class SubjectService:
     async def get_all(self) -> list[Subject]:
         return await self.subject_repo.get_all()
 
-    async def get_by_id(self, subject_id: int) -> Subject:
+    async def get_by_id(self, subject_id: int) -> Subject|None:
         subject = await self.subject_repo.get_one_or_none_by_id(id=subject_id)
-        if not subject:
-            logger.error(f"Subject with {subject_id} id does not exist")
-            raise NotFoundError("An subject with this id does not exist")
         return subject
 
     async def create(self, subject_in: SubjectCreate) -> Subject:
-        subject = await self.subject_repo.get_one_or_none(filters=subject_in)
-        if subject:
-            logger.error(f"Subject with {subject_in.name} name already exist")
-            raise ConflictError("An subject with this name already exist")
-        data = subject_in.model_dump()
-        return await self.subject_repo.create(data=data)
-
+        logger.error(f"Subject with {subject_in.name} name already exist")
+        try:
+            subject = await self.subject_repo.create(data=subject_in)
+            return subject
+        except IntegrityError as e:
+            logger.error(f"Integirity error while creating subject: {str(e)}")
+            raise ConflictErr("Subject")
+        
     async def update(
         self,
         subject_id: int,
@@ -40,23 +38,20 @@ class SubjectService:
     ) -> Subject:
         subject = await self.subject_repo.get_one_or_none_by_id(id=subject_id)
         if not subject:
-            logger.error(f"Subject with {subject_id} id does not exist")
-            raise NotFoundError("An subject with this id does not exist")
+            raise NotFoundErr("Subject",subject_id)
         try:
-            update_data = subject_in.model_dump(exclude_unset=True)
             return await self.subject_repo.update(
                 data=subject,
-                update_data=update_data,
+                update_data=subject_in,
             )
         except IntegrityError as e:
-            logger.error({e})
-            raise ConflictError("Subject with this name alredy exist")
+            logger.error(f"Integirity error while updating subject: {str(e)}")
+            raise ConflictErr("Subject")
 
-    async def delete(self, subject_id: int):
+    async def delete(self, subject_id: int)->None:
         subject = await self.subject_repo.get_one_or_none_by_id(id=subject_id)
         if not subject:
-            logger.error(f"Subject with {subject_id} id does not exist")
-            raise NotFoundError("An subject with this id does not exist")
+            raise NotFoundErr("Subject",subject_id)
         return await self.subject_repo.delete(id=subject_id)
 
     async def search_subjects(self, query: str) -> list[Subject]:
