@@ -12,7 +12,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
-    role: str | None
+    role: str|None = None
 
 
 class UserRegister(UserCreate):
