@@ -30,7 +30,6 @@ async def get_db():
         finally:
             await session.close()
 
-
 int_pk = Annotated[int, mapped_column(primary_key=True, autoincrement="auto")]
 created_at = Annotated[datetime, mapped_column(TIMESTAMP, server_default=func.now())]
 updated_at = Annotated[

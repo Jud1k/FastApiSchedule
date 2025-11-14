@@ -50,7 +50,7 @@ async def get_subject_service(session: AsyncSession = Depends(get_db)):
     return SubjectService(session)
 
 
-SubjectServiceDep = Annotated[SubjectService, get_subject_service]
+SubjectServiceDep = Annotated[SubjectService, Depends(get_subject_service)]
 
 
 async def get_teacher_service(session: AsyncSession = Depends(get_db)):
@@ -64,7 +64,7 @@ async def get_lesson_service(session: AsyncSession = Depends(get_db)):
     return LessonService(session=session)
 
 
-LessonServiceDep = Annotated[LessonService, get_lesson_service]
+LessonServiceDep = Annotated[LessonService, Depends(get_lesson_service)]
 
 
 async def get_user_service(session: AsyncSession = Depends(get_db)):
@@ -76,3 +76,6 @@ UserServiceDep = Annotated[UserService, Depends(get_user_service)]
 
 async def get_building_service(session: AsyncSession = Depends(get_db)):
     return BuildingService(session=session)
+
+
+BuildingServiceDep = Annotated[BuildingService,Depends(get_building_service)]
