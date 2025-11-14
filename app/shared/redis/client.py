@@ -40,7 +40,7 @@ class RedisClient:
     async def close(self):
         """Закрывает подключение к Redis."""
         if self._client:
-            await self._client.close()
+            await self._client.aclose()
             self._client = None
 
     def get_client(self) -> CustomRedis:
