@@ -27,16 +27,16 @@ class LessonRepository(SqlAlchemyRepository[Lesson]):
     async def get_lessons_by_group_id(
         self,
         group_id: int,
-    ) -> list[dict]:
+    ):
         stmt = (
             select(self.model)
             .options(
                 joinedload(self.model.subject),
                 joinedload(self.model.room),
                 joinedload(self.model.teacher),
+                joinedload(self.model.group)
             )
             .where(self.model.group_id == group_id)
-            .order_by(self.model.day_week)
         )
         result = await self.session.execute(stmt)
         lessons = result.scalars().all()
@@ -50,6 +50,63 @@ class LessonRepository(SqlAlchemyRepository[Lesson]):
                 "subject": lesson.subject.name,
                 "teacher": lesson.teacher.name,
                 "room": lesson.room.name,
+                "group":lesson.group.name
+            }
+            for lesson in lessons
+        )
+
+    async def get_lessons_by_room_id(self,room_id:int):
+        stmt = (
+            select(self.model)
+            .options(
+                joinedload(self.model.subject),
+                joinedload(self.model.room),
+                joinedload(self.model.teacher),
+                joinedload(self.model.group)
+            )
+            .where(self.model.room_id == room_id)
+        )
+        result = await self.session.execute(stmt)
+        lessons = result.scalars().all()
+        
+        return (
+            {
+                "id": lesson.id,
+                "time_id": lesson.time_id,
+                "day_week": lesson.day_week,
+                "type_lesson": lesson.type_lesson,
+                "subject": lesson.subject.name,
+                "teacher": lesson.teacher.name,
+                "room": lesson.room.name,
+                "group":lesson.group.name
+            }
+            for lesson in lessons
+        )
+    
+    async def get_lessons_by_teacher_id(self,teacher_id:int):
+        stmt = (
+            select(self.model)
+            .options(
+                joinedload(self.model.subject),
+                joinedload(self.model.room),
+                joinedload(self.model.teacher),
+                joinedload(self.model.group)
+            )
+            .where(self.model.teacher_id == teacher_id)
+        )
+        result = await self.session.execute(stmt)
+        lessons = result.scalars().all()
+        
+        return (
+            {
+                "id": lesson.id,
+                "time_id": lesson.time_id,
+                "day_week": lesson.day_week,
+                "type_lesson": lesson.type_lesson,
+                "subject": lesson.subject.name,
+                "teacher": lesson.teacher.name,
+                "room": lesson.room.name,
+                "group":lesson.group.name
             }
             for lesson in lessons
         )

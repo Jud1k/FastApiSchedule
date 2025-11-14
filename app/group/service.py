@@ -4,9 +4,9 @@ import logging
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.exceptions import ConflictError, NotFoundError
+from app.exceptions import ConflictErr, NotFoundErr
 from app.group.repository import GroupRepository
-from app.group.schemas import GroupSummary, GroupCreate, GroupUpdate
+from app.group.schemas import GroupCreate, GroupUpdate
 from app.shared.models import Group
 from app.shared.redis.custom_redis import CustomRedis
 
@@ -29,43 +29,37 @@ class GroupService:
 
     async def get_by_id(self, group_id: int) -> Group | None:
         group = await self.group_repo.get_one_or_none_by_id(id=group_id)
-        if not group:
-            logger.error(f"Group with {group_id} id does not exist")
-            raise NotFoundError("An group with this id does not exist")
         return group
-
-    async def get_groups_summary(self) -> list[GroupSummary | None]:
+    
+    async def get_groups_summary(self):
         groups = await self.group_repo.get_groups_summary()
         return groups
 
     async def create(self, group_in: GroupCreate) -> Group:
-        group = await self.group_repo.get_one_or_none(filters=group_in)
-        if group:
-            logger.error(f"Group with name {group.name} already exist")
-            raise ConflictError("An group with this name already exist")
-        await self.redis.delete_key("groups")
-        data = group_in.model_dump()
-        return await self.group_repo.create(data=data)
-
+        try:
+            group = await self.group_repo.create(data=group_in)
+            await self.redis.delete_key(CacheKeys.GROUPS)
+            return group
+        except IntegrityError as e:
+            logger.error(f"Error while created group: {str(e)}")
+            raise ConflictErr("Group")
+        
     async def update(self, group_id: int, group_in: GroupUpdate) -> Group:
         group = await self.group_repo.get_one_or_none_by_id(id=group_id)
-        if not group:
-            logger.error(f"Group with {group_id} id does not exist")
-            raise NotFoundError("An group with this id does not exist")
+        if group is None:
+            raise NotFoundErr("Group",group_id)
         try:
-            update_data = group_in.model_dump(exclude_unset=True)
-            group = await self.group_repo.update(data=group, update_data=update_data)
+            group = await self.group_repo.update(data=group, update_data=group_in)
+            await self.redis.delete_key(CacheKeys.GROUPS)
+            return group
         except IntegrityError as e:
-            logger.error({e})
-            raise ConflictError("An group with this name alredy exist")
-        await self.redis.delete_key("groups")
-        return group
-
+            logger.error(f"Integirity error while updating group: {str(e)}")
+            raise ConflictErr("Group")
+        
     async def delete(self, group_id: int):
         group = await self.group_repo.get_one_or_none_by_id(id=group_id)
         if not group:
-            logger.error(f"Group with {group_id} id does not exist")
-            raise NotFoundError("An group with this id does not exist")
+            raise NotFoundErr("Group")
         await self.redis.delete_key("groups")
         await self.group_repo.delete(id=group_id)
 

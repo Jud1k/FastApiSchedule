@@ -3,8 +3,8 @@ import logging
 from sqlalchemy.exc import IntegrityError
 
 from app.building.repository import BuildingRepository
-from app.building.schemas import BuildingCreate
-from app.exceptions import ConflictError, NotFoundError
+from app.building.schemas import BuildingCreate,BuildingUpdate
+from app.exceptions import ConflictErr, NotFoundErr
 from app.shared.models import Building
 
 logger = logging.getLogger(__name__)
@@ -12,40 +12,37 @@ logger = logging.getLogger(__name__)
 
 class BuildingService:
     def __init__(self, session):
-        self.build_repo = BuildingRepository(session)
+        self.building_repo = BuildingRepository(session)
 
-    async def get_by_id(self, build_id: int) -> Building | None:
-        build = await self.build_repo.get_one_or_none_by_id(id=build_id)
+    async def get_by_id(self, building_id: int) -> Building | None:
+        build = await self.building_repo.get_one_or_none_by_id(id=building_id)
         return build
 
     async def get_all(self) -> list[Building]:
-        build = await self.build_repo.get_all()
+        build = await self.building_repo.get_all()
         return build
 
-    async def create(self, build_in: BuildingCreate) -> Building:
+    async def create(self, building_in: BuildingCreate) -> Building:
         try:
-            build_data = build_in.model_dump()
-            building = await self.build_repo.create(data=build_data)
+            building = await self.building_repo.create(data=building_in)
             return building
-        except IntegrityError:
-            raise ConflictError("Building with this name or address already exist")
-
-    async def update(self, build_id: int, build_in: BuildingCreate) -> Building:
-        build = await self.build_repo.get_one_or_none_by_id(id=build_id)
-        if not build:
-            logger.error(f"Building with {build_id} not found")
-            raise NotFoundError(f"Building with {build_id} not found")
-        try:
-            build_data = build_in.model_dump()
-            build = await self.build_repo.update(data=build, update_data=build_data)
-            return build
         except IntegrityError as e:
-            logger.error(e)
-            raise ConflictError("Building with this name or addres already exist")
+            logger.error(f"Integirity error while created Building:{str(e)}")
+            raise ConflictErr("Building")
+        
+    async def update(self, building_id: int, building_in: BuildingUpdate) -> Building:
+        building = await self.building_repo.get_one_or_none_by_id(id=building_id)
+        if not building:
+            raise NotFoundErr("Building", building_id)
+        try:
+            building = await self.building_repo.update(data=building, update_data=building_in)
+            return building
+        except IntegrityError as e:
+            logger.error(f"Integirity error while updating Building:{str(e)}")
+            raise ConflictErr("Building")
 
-    async def delete(self, build_id: int):
-        build = await self.build_repo.get_one_or_none_by_id(id=build_id)
-        if not build:
-            logger.error(f"Building with {build_id} not found")
-            raise NotFoundError(f"Building with {build_id} not found")
-        await self.build_repo.delete(id=build_id)
+    async def delete(self, building_id: int)->None:
+        building = await self.building_repo.get_one_or_none_by_id(id=building_id)
+        if not building:
+            raise NotFoundErr("Building",building_id)
+        await self.building_repo.delete(id=building_id)

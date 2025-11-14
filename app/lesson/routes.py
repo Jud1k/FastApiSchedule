@@ -1,50 +1,64 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 
-from app.core.deps.service import get_lesson_service
-from app.exceptions import ConflictError, NotFoundError
-from app.lesson.schemas import LessonRead, LessonCreate, LessonUpdate, LessonByGroupId
-from app.lesson.service import LessonService
+from app.core.deps.service import LessonServiceDep
+from app.lesson.schemas import LessonCreate, LessonUpdate, LessonById, LessonReadMinimal
 
 router = APIRouter(prefix="/lesson", tags=["Lessons"])
 
 
-@router.get("/", response_model=list[LessonRead])
-async def get_schedule(service: LessonService = Depends(get_lesson_service)):
-    return await service.get_all()
+# @router.get("/", response_model=list[LessonRead])
+# async def get_schedule(service: LessonService = Depends(get_lesson_service)):
+#     return await service.get_all()
 
 
-@router.get("/{group_id}", response_model=list[LessonByGroupId])
-async def get_all_lessons_with_names_by_group_id(
-    group_id: int,
-    service: LessonService = Depends(get_lesson_service),
+# @router.get("/{group_id}", response_model=list[LessonById])
+# async def get_all_lessons_with_names_by_group_id(
+#     group_id: int,
+#     service: LessonServiceDep
+# ):
+#     return await service.get_lessons_by_group_id(
+#         group_id=group_id,
+#     )
+    
+@router.get("/",response_model=list[LessonById])
+async def get_all_lessons_by_query(
+    service: LessonServiceDep,
+    group: int|None=None,
+    teacher:int|None=None,
+    room:int|None=None,
 ):
-    return await service.get_lessons_by_group_id(
-        group_id=group_id,
-    )
+    filters_count = sum([bool(group), bool(teacher), bool(room)])
+    
+    if filters_count == 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="At least one filter is required")
+    if filters_count > 1:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only one filter parameter is allowed")
+    if group:
+        return await service.get_lessons_by_group_id(group_id=group)
+    if teacher:
+        return await service.get_lessons_by_teacher_id(teacher_id=teacher)
+    if room:
+        return await service.get_lessons_by_room_id(room_id=room)
 
 
-@router.post("/", response_model=LessonRead)
+@router.post("/", response_model=LessonReadMinimal)
 async def create(
     lesson_in: LessonCreate,
-    service: LessonService = Depends(get_lesson_service),
+    service: LessonServiceDep
 ):
     return await service.create(lesson_in=lesson_in)
 
 
-@router.put("/{lesson_id}", response_model=LessonRead)
+@router.put("/{lesson_id}", response_model=LessonReadMinimal)
 async def update_lesson(
     lesson_id: int,
     lesson_in: LessonUpdate,
-    service: LessonService = Depends(get_lesson_service),
+    service: LessonServiceDep
 ):
-    try:
-        return await service.update(lesson_id=lesson_id, lesson_in=lesson_in)
-    except NotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except ConflictError as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    return await service.update(lesson_id=lesson_id, lesson_in=lesson_in)
+
 
 
 @router.delete("/{lesson_id}", response_model=None)
-async def delete_lesson(lesson_id: int, service: LessonService = Depends(get_lesson_service)):
+async def delete_lesson(lesson_id: int, service:LessonServiceDep):
     return await service.delete(lesson_id=lesson_id)

@@ -1,19 +1,19 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter,status
 
-from app.core.deps.service import get_student_service
+from app.core.deps.service import StudentServiceDep
+from app.exceptions import NotFoundErr
 from app.student.schemas import (
     StudentCreate,
     StudentRead,
     StudentUpdate,
 )
-from app.student.service import StudentService
 
 router = APIRouter(prefix="/student", tags=["Students🧑"])
 
 
 @router.get("/", response_model=list[StudentRead])
 async def get_all_students(
-    service: StudentService = Depends(get_student_service),
+    service:StudentServiceDep
 ):
     return await service.get_all()
 
@@ -21,15 +21,16 @@ async def get_all_students(
 @router.get("/{student_id}", response_model=StudentRead)
 async def get_student_by_id(
     student_id: int,
-    service: StudentService = Depends(get_student_service),
+    service:StudentServiceDep
 ):
-    return await service.get_by_id(student_id=student_id)
+    student =  await service.get_by_id(student_id=student_id)
+    if not student:
+        raise NotFoundErr("Student",student_id)
 
-
-@router.post("/", response_model=StudentRead)
+@router.post("/", response_model=StudentRead,status_code=status.HTTP_201_CREATED)
 async def create_student(
     student_in: StudentCreate,
-    service: StudentService = Depends(get_student_service),
+    service:StudentServiceDep
 ):
     return await service.create(student_in=student_in)
 
@@ -38,14 +39,14 @@ async def create_student(
 async def update_student(
     student_id: int,
     student_in: StudentUpdate,
-    service: StudentService = Depends(get_student_service),
+    service:StudentServiceDep
 ):
     return await service.update(student_id=student_id, student_in=student_in)
 
 
-@router.delete("/", response_model=None)
+@router.delete("/", response_model=None,status_code=status.HTTP_204_NO_CONTENT)
 async def delete_student(
     student_id: int,
-    service: StudentService = Depends(get_student_service),
+    service:StudentServiceDep
 ):
     return await service.delete(student_id=student_id)

@@ -1,15 +1,11 @@
-from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, status
 
 from app.building.schemas import BuildingCreate, BuildingRead
-from app.building.service import BuildingService
-from app.core.deps.service import get_building_service
-from app.exceptions import ConflictError, NotFoundError
+from app.core.deps.service import BuildingServiceDep
+from app.exceptions import NotFoundErr
 
 
 router = APIRouter(prefix="/building", tags=["Building"])
-
-BuildingServiceDep = Annotated[BuildingService, Depends(get_building_service)]
 
 
 @router.get("/", response_model=list[BuildingRead])
@@ -17,41 +13,28 @@ async def get_all_buildings(service: BuildingServiceDep):
     return await service.get_all()
 
 
-@router.get("/{build_id}", response_model=BuildingRead)
-async def get_building_by_id(build_id: int, service: BuildingServiceDep):
-    build = await service.get_by_id(build_id)
-    if not build:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Building with this id does not exist"
-        )
-    return build
+@router.get("/{building_id}", response_model=BuildingRead)
+async def get_building_by_id(building_id: int, service: BuildingServiceDep):
+    building = await service.get_by_id(building_id)
+    if not building:
+        raise NotFoundErr("Building",building_id)
+    return building
 
 
-@router.post("/", response_model=BuildingRead)
-async def create_building(build_in: BuildingCreate, service: BuildingServiceDep):
-    try:
-        return await service.create(build_in=build_in)
-    except ConflictError as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+@router.post("/", response_model=BuildingRead,status_code=status.HTTP_201_CREATED)
+async def create_building(building_in: BuildingCreate, service: BuildingServiceDep):
+    return await service.create(building_in=building_in)
 
 
-@router.put("/{build_id}", response_model=BuildingRead)
+@router.put("/{building_id}", response_model=BuildingRead)
 async def update_building(
-    build_id: int,
-    build_in: BuildingCreate,
+    building_id: int,
+    building_in: BuildingCreate,
     service: BuildingServiceDep,
 ):
-    try:
-        return await service.update(build_id=build_id, build_in=build_in)
-    except NotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except ConflictError as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    return await service.update(building_id=building_id, building_in=building_in)
 
 
-@router.delete("/{build_id}", response_model=None)
-async def delete_building(build_id: int, service: BuildingServiceDep):
-    try:
-        return await service.delete(build_id=build_id)
-    except NotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+@router.delete("/{building_id}", response_model=None, status_code=status.HTTP_204_NO_CONTENT)
+async def delete_building(building_id: int, service: BuildingServiceDep):
+    return await service.delete(building_id=building_id)

@@ -1,30 +1,29 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, status
 from fastapi.params import Query
 
-from app.core.deps.service import get_group_service
-from app.exceptions import ConflictError, NotFoundError
+from app.core.deps.service import GroupServiceDep
+from app.exceptions import NotFoundErr
 from app.group.schemas import GroupRead, GroupSummary, GroupCreate, GroupUpdate
-from app.group.service import GroupService
 
 router = APIRouter(prefix="/group", tags=["Groups👩‍💻👨‍💻"])
 
 
 @router.get("/search", response_model=list[GroupRead])
 async def search_groups_by_name(
-    query: str = Query(max_length=50),
-    service: GroupService = Depends(get_group_service),
+    service: GroupServiceDep,
+    query = Query(max_length=50),
 ):
-    return await service.search_groups(query=query)
+    return await service.search_groups(query=str(query))
 
 
 @router.get("/summary/", response_model=list[GroupSummary])
-async def get_groups_summary(service: GroupService = Depends(get_group_service)):
+async def get_groups_summary(service: GroupServiceDep):
     return await service.get_groups_summary()
 
 
 @router.get("/", response_model=list[GroupRead])
 async def get_all_groups(
-    service: GroupService = Depends(get_group_service),
+    service: GroupServiceDep
 ):
     return await service.get_all()
 
@@ -32,45 +31,35 @@ async def get_all_groups(
 @router.get("/{group_id}", response_model=GroupRead)
 async def get_group_by_id(
     group_id: int,
-    service: GroupService = Depends(get_group_service),
+    service: GroupServiceDep
 ):
-    try:
-        return await service.get_by_id(group_id=group_id)
-    except NotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        group = await service.get_by_id(group_id=group_id)
+        if not group:
+            raise NotFoundErr("Group",group_id)
+        return group
 
-
-@router.post("/", response_model=GroupRead)
+@router.post("/", response_model=GroupRead,status_code=status.HTTP_201_CREATED)
 async def create_group(
     group_in: GroupCreate,
-    service: GroupService = Depends(get_group_service),
+    service: GroupServiceDep
 ):
-    try:
-        return await service.create(group_in=group_in)
-    except ConflictError as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    return await service.create(group_in=group_in)
+
 
 
 @router.put("/{group_id}", response_model=GroupRead)
 async def update_group(
     group_id: int,
     group_in: GroupUpdate,
-    service: GroupService = Depends(get_group_service),
+    service: GroupServiceDep
 ):
-    try:
-        return await service.update(group_id=group_id, group_in=group_in)
-    except NotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except ConflictError as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    return await service.update(group_id=group_id, group_in=group_in)
 
 
-@router.delete("/{group_id}", response_model=None)
+@router.delete("/{group_id}", response_model=None,status_code=status.HTTP_204_NO_CONTENT)
 async def delete_group(
     group_id: int,
-    service: GroupService = Depends(get_group_service),
+    service: GroupServiceDep
 ):
-    try:
-        await service.delete(group_id=group_id)
-    except NotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    await service.delete(group_id=group_id)
+

@@ -10,7 +10,7 @@ class GroupRepository(SqlAlchemyRepository[Group]):
     async def search(self, query: str) -> list[Group]:
         stmt = select(self.model).where(self.model.name.ilike(f"%{query}%"))
         results = await self.session.execute(stmt)
-        groups = results.scalars().all()
+        groups = list(results.scalars().all())
         return groups
 
     async def get_groups_summary(self):

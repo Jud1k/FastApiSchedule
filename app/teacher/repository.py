@@ -10,5 +10,5 @@ class TeacherRepository(SqlAlchemyRepository[Teacher]):
     async def search(self, query: str) -> list[Teacher]:
         stmt = select(self.model).where(self.model.name.ilike(f"%{query}%"))
         results = await self.session.execute(stmt)
-        teachers = results.scalars().all()
+        teachers = list(results.scalars().all())
         return teachers

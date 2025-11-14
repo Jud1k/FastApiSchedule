@@ -11,5 +11,5 @@ class StudentRepository(SqlAlchemyRepository[Student]):
     async def get_students(self) -> list[Student]:
         stmt = select(self.model).options(joinedload(self.model.group))
         result = await self.session.execute(stmt)
-        students = result.scalars().all()
+        students = list(result.scalars().all())
         return students
