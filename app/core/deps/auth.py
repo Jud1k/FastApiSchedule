@@ -1,29 +1,26 @@
 import logging
+from typing import Annotated
+import uuid
 
 from fastapi import Depends, Request
+from fastapi.security import OAuth2PasswordBearer
 from jose import ExpiredSignatureError, JWTError
 
-from app.auth.schemas import UserRead
-from app.auth.token_service import TokenService
-from app.core.deps.service import get_token_service
+from app.core.deps.service import AuthServiceDep
+from app.domain.auth.schemas import UserRead
+from app.domain.auth.utils import decode_token
 from app.exceptions import (
     ForbiddenException,
     MissingCoockies,
     NoJwtException,
+    NotFoundException,
     TokenExpiredException,
-    TokenNoFound,
 )
-from app.shared.models import User
+from app.db.models import User
 
 logger = logging.getLogger(__name__)
 
-
-def get_access_token(request: Request):
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        raise TokenNoFound
-    access_token = auth_header.split(" ")[1]
-    return access_token
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/login/")
 
 
 def get_refresh_token(request: Request):
@@ -34,19 +31,23 @@ def get_refresh_token(request: Request):
 
 
 async def get_current_user(
-    token: str = Depends(get_access_token),
-    token_service: TokenService = Depends(get_token_service),
+    service:AuthServiceDep,
+    token:str= Depends(oauth2_scheme),
 ) -> UserRead:
     try:
-        payload = token_service._decode_token(token=token)
+        payload = decode_token(token=token)
     except ExpiredSignatureError:
         raise TokenExpiredException
     except JWTError:
         raise NoJwtException
-    return UserRead(email=payload.email, id=int(payload.sub), role=payload.role)
+    user = await service.get_by_id(user_id=uuid.UUID(payload["sub"]))
+    if not user:
+        raise NotFoundException("User", payload["sub"])
+    return UserRead.model_validate(user)
 
+CurrentUser = Annotated[UserRead,Depends(get_current_user)]
 
 async def get_current_admin_user(current_user: User = Depends(get_current_user)):
-    if current_user.role_id in [2, 3]:
+    if current_user.role == "admin":
         return current_user
     raise ForbiddenException

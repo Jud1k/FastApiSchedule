@@ -2,18 +2,17 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.token_service import TokenService
-from app.auth.user_service import UserService
-from app.building.service import BuildingService
-from app.core.database import get_db
-from app.group.service import GroupService
-from app.lesson.service import LessonService
-from app.room.service import RoomService
-from app.shared.redis.custom_redis import CustomRedis
-from app.shared.redis.manager import get_redis
-from app.student.service import StudentService
-from app.subject.service import SubjectService
-from app.teacher.service import TeacherService
+from app.domain.auth.service import AuthService
+from app.domain.building.service import BuildingService
+from app.db.database import get_db
+from app.domain.group.service import GroupService
+from app.domain.lesson.service import LessonService
+from app.domain.room.service import RoomService
+from app.cache.custom_redis import CustomRedis
+from app.cache.manager import get_redis
+from app.domain.student.service import StudentService
+from app.domain.subject.service import SubjectService
+from app.domain.teacher.service import TeacherService
 
 
 async def get_group_service(
@@ -23,13 +22,6 @@ async def get_group_service(
 
 
 GroupServiceDep = Annotated[GroupService, Depends(get_group_service)]
-
-
-async def get_token_service(redis: CustomRedis = Depends(get_redis)):
-    return TokenService(redis=redis)
-
-
-TokenServiceDep = Annotated[TokenService, Depends(get_token_service)]
 
 
 async def get_room_service(session: AsyncSession = Depends(get_db)):
@@ -67,11 +59,11 @@ async def get_lesson_service(session: AsyncSession = Depends(get_db)):
 LessonServiceDep = Annotated[LessonService, Depends(get_lesson_service)]
 
 
-async def get_user_service(session: AsyncSession = Depends(get_db)):
-    return UserService(session=session)
+async def get_auth_service(session: AsyncSession = Depends(get_db),redis: CustomRedis = Depends(get_redis)):
+    return AuthService(session=session,redis=redis)
 
 
-UserServiceDep = Annotated[UserService, Depends(get_user_service)]
+AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 
 
 async def get_building_service(session: AsyncSession = Depends(get_db)):

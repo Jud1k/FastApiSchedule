@@ -12,10 +12,13 @@ class Setting(BaseSettings):
     REDIS_HOST: str
     SECRET_KEY: str
     ALGORITHM: str
+    ACCESS_TOKEN_EXPIRE_MINUTES:int
+    REFRESH_TOKEN_EXPIRE_MINUTES:int
+    
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 
-settings = Setting()
+settings = Setting() # type: ignore
 
 
 def get_db_url() -> str:

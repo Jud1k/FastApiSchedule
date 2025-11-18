@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 
 
-class NotFoundErr(HTTPException):
+class NotFoundException(HTTPException):
     def __init__(self, record_name="Record", record_id=None, headers=None):
         """Custom HTTPException for 404 Not Found errors.
 
@@ -11,7 +11,7 @@ class NotFoundErr(HTTPException):
         super().__init__(status_code=status.HTTP_404_NOT_FOUND, detail=message, headers=headers)
 
 
-class ConflictErr(HTTPException):
+class ConflictException(HTTPException):
     def __init__(self, record_name="Record", headers=None):
         """Custom HTTPException for 409 Conflict errors."""
         message = f"{record_name} already exist"
