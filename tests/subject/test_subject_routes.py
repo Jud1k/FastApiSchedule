@@ -1,8 +1,9 @@
+import random
 import pytest
 
 from httpx import AsyncClient
 
-from app.subject.schemas import SubjectCreate, SubjectUpdate
+from app.domain.subject.schemas import SubjectCreate, SubjectUpdate
 from tests.factories import SubjectFactory
 
 
@@ -32,12 +33,12 @@ async def test_get_subject(client:AsyncClient,subject_factory:SubjectFactory):
     
 @pytest.mark.asyncio
 async def test_get_subject_not_found(client:AsyncClient,subject_factory:SubjectFactory):
-    subject_instance = subject_factory.build()
+    subject_id = random.randint(1,1_000_000) 
     
-    response = await client.get(f"/api/v1/subject/{subject_instance.id}")
+    response = await client.get(f"/api/v1/subject/{subject_id}")
     assert response.status_code==404
     response_data=response.json()
-    assert response_data["detail"]==f"Subject with ID {subject_instance.id} not found"
+    assert response_data["detail"]==f"Subject with ID {subject_id} not found"
     
     
 @pytest.mark.asyncio
@@ -79,9 +80,9 @@ async def test_delete_subject(client:AsyncClient,subject_factory:SubjectFactory)
 
 @pytest.mark.asyncio
 async def test_delete_subject_not_found(client:AsyncClient,subject_factory:SubjectFactory):
-    subject_instance = subject_factory.build()
+    subject_id = random.randint(1,1_000_000) 
     
-    response = await client.delete(f"/api/v1/subject/{subject_instance.id}")
+    response = await client.delete(f"/api/v1/subject/{subject_id}")
     assert response.status_code==404
     response_data = response.json()
-    assert response_data["detail"]==f"Subject with ID {subject_instance.id} not found"
+    assert response_data["detail"]==f"Subject with ID {subject_id} not found"
