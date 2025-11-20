@@ -6,19 +6,18 @@ import uuid
 from contextlib import asynccontextmanager
 
 import uvicorn
-
 from fastapi import FastAPI, Request, Response, status
 from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.logging import configure_logging
+from app.cache.manager import redis_manager
 from app.domain.auth.routes import router as user_router
 from app.domain.building.routes import router as building_router
-from app.logging import configure_logging
 from app.domain.group.routes import router as group_router
 from app.domain.lesson.routes import router as schedule_router
 from app.domain.room.routes import router as room_router
-from app.cache.manager import redis_manager
 from app.domain.student.routes import router as student_router
 from app.domain.subject.routes import router as subject_router
 from app.domain.teacher.routes import router as teacher_router
@@ -27,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 configure_logging()
 
+# sentry_sdk.init(dsn=settings.SENTRY_DSN,send_default_pii=True,enable_logs=True)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
