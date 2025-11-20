@@ -24,13 +24,15 @@ class GroupFactory(BaseSqlAlchemyFactory[Group]):
 class StudentFactory(BaseSqlAlchemyFactory[Student]):
     __model__=Student
     
-class LessonFactory(BaseSqlAlchemyFactory[Lesson]):
-    __model__=Lesson
-    
 class TeacherFactory(BaseSqlAlchemyFactory[Teacher]):
     __model__=Teacher
 
     email=BaseSqlAlchemyFactory.__faker__.email
+    
+class LessonFactory(BaseSqlAlchemyFactory[Lesson]):
+    __model__=Lesson
+    
+    teacher = TeacherFactory
     
 class UserFactory(BaseSqlAlchemyFactory[User]):
     __model__=User
@@ -38,3 +40,4 @@ class UserFactory(BaseSqlAlchemyFactory[User]):
     email= BaseSqlAlchemyFactory.__faker__.email
     password = get_password_hash(BaseSqlAlchemyFactory.__faker__.password(special_chars=False))
     role="user"
+    
