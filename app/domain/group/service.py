@@ -41,7 +41,7 @@ class GroupService:
             await self.redis.delete_key(CacheKeys.GROUPS)
             return group
         except IntegrityError as e:
-            logger.error(f"Error while created group: {str(e)}")
+            logger.error(f"Error while creating group: {str(e)}")
             raise ConflictException("Group")
         
     async def update(self, group_id: int, group_in: GroupUpdate) -> Group:
