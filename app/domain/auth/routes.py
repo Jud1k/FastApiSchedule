@@ -71,8 +71,8 @@ async def login_user(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=True,
-        samesite="none",
+        secure=False,
+        samesite="lax",
         max_age=30 * 24 * 60 * 60,
     )
     user_data = UserRead.model_validate(user)
@@ -153,8 +153,8 @@ async def process_refresh_token(
         key="refresh_token",
         value=new_refresh_token,
         httponly=True,
-        secure=True,
-        samesite="none",
+        secure=False,
+        samesite="lax",
         max_age=30 * 24 * 60 * 60,
     )
     user_data = UserRead.model_validate(user)
