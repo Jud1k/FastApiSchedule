@@ -30,6 +30,7 @@ dev = [
     "pyright>=1.1.407",
     "pytest-asyncio>=1.2.0",
     "ruff>=0.14.2",
+    "sentry-sdk[fastapi]>=2.45.0",
 ]
 
 [tool.ruff]
