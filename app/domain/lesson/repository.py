@@ -27,7 +27,7 @@ class LessonRepository(SqlAlchemyRepository[Lesson]):
     async def get_lessons_by_group_id(
         self,
         group_id: int,
-    ):
+    )->list[Lesson]:
         stmt = (
             select(self.model)
             .options(
@@ -39,23 +39,11 @@ class LessonRepository(SqlAlchemyRepository[Lesson]):
             .where(self.model.group_id == group_id)
         )
         result = await self.session.execute(stmt)
-        lessons = result.scalars().all()
+        lessons = list(result.scalars().all())
 
-        return (
-            {
-                "id": lesson.id,
-                "time_id": lesson.time_id,
-                "day_of_week": lesson.day_of_week,
-                "type": lesson.type,
-                "subject": lesson.subject.name,
-                "teacher": lesson.teacher.first_name,
-                "room": lesson.room.name,
-                "group":lesson.group.name
-            }
-            for lesson in lessons
-        )
-
-    async def get_lessons_by_room_id(self,room_id:int):
+        return lessons
+    
+    async def get_lessons_by_room_id(self,room_id:int)->list[Lesson]:
         stmt = (
             select(self.model)
             .options(
@@ -67,23 +55,11 @@ class LessonRepository(SqlAlchemyRepository[Lesson]):
             .where(self.model.room_id == room_id)
         )
         result = await self.session.execute(stmt)
-        lessons = result.scalars().all()
+        lessons = list(result.scalars().all())
         
-        return (
-            {
-                "id": lesson.id,
-                "time_id": lesson.time_id,
-                "day_of_week": lesson.day_of_week,
-                "type": lesson.type,
-                "subject": lesson.subject.name,
-                "teacher": lesson.teacher.first_name,
-                "room": lesson.room.name,
-                "group":lesson.group.name
-            }
-            for lesson in lessons
-        )
+        return lessons
     
-    async def get_lessons_by_teacher_id(self,teacher_id:int):
+    async def get_lessons_by_teacher_id(self,teacher_id:int)->list[Lesson]:
         stmt = (
             select(self.model)
             .options(
@@ -95,18 +71,6 @@ class LessonRepository(SqlAlchemyRepository[Lesson]):
             .where(self.model.teacher_id == teacher_id)
         )
         result = await self.session.execute(stmt)
-        lessons = result.scalars().all()
+        lessons = list(result.scalars().all())
         
-        return (
-            {
-                "id": lesson.id,
-                "time_id": lesson.time_id,
-                "day_of_week": lesson.day_of_week,
-                "type": lesson.type,
-                "subject": lesson.subject.name,
-                "teacher": lesson.teacher.first_name,
-                "room": lesson.room.name,
-                "group":lesson.group.name
-            }
-            for lesson in lessons
-        )
+        return lessons

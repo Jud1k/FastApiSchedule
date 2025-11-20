@@ -12,15 +12,15 @@ class LessonBase(BaseModel):
     time_id: int
     day_of_week: int
     type: str
-    subject_id: int
-    teacher_id: int
-    room_id: int
-    group_id: int
 
     model_config = ConfigDict(from_attributes=True)
     
 class LessonRead(LessonBase):
     id: int
+    subject_id: int
+    teacher_id: int
+    room_id: int
+    group_id: int
     group: GroupRead
     subject: SubjectRead
     teacher: TeacherRead
@@ -30,13 +30,23 @@ class LessonRead(LessonBase):
 
 class LessonReadMinimal(LessonBase):
     id:int
+    subject_id: int
+    teacher_id: int
+    room_id: int
+    group_id: int
     
 class LessonCreate(LessonBase):
-    pass
+    subject_id: int
+    teacher_id: int
+    room_id: int
+    group_id: int
 
 
 class LessonUpdate(LessonBase):
-    pass
+    subject_id: int
+    teacher_id: int
+    room_id: int
+    group_id: int
 
 
 class LessonById(BaseModel):
@@ -44,7 +54,7 @@ class LessonById(BaseModel):
     time_id: int
     day_of_week: int
     type: str
-    subject: str
-    teacher: str
-    room: str
-    group: str
+    group: GroupRead
+    subject: SubjectRead
+    teacher: TeacherRead
+    room: RoomReadMinimal

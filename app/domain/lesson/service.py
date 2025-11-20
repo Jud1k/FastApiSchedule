@@ -22,13 +22,13 @@ class LessonService:
         lesson = await self.lesson_repo.get_one_or_none_by_id(id=lesson_id)
         return lesson
 
-    async def get_lessons_by_group_id(self, group_id: int):
+    async def get_lessons_by_group_id(self, group_id: int)->list[Lesson]:
         return await self.lesson_repo.get_lessons_by_group_id(group_id=group_id)
 
-    async def get_lessons_by_room_id(self,room_id:int):
+    async def get_lessons_by_room_id(self,room_id:int)->list[Lesson]:
         return await self.lesson_repo.get_lessons_by_room_id(room_id=room_id)
     
-    async def get_lessons_by_teacher_id(self,teacher_id:int):
+    async def get_lessons_by_teacher_id(self,teacher_id:int)->list[Lesson]:
         return await self.lesson_repo.get_lessons_by_teacher_id(teacher_id=teacher_id)
     
     async def create(self, lesson_in: LessonCreate) -> Lesson:
