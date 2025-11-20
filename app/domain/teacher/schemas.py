@@ -5,8 +5,8 @@ from pydantic import BaseModel, EmailStr
 
 class TeacherBase(BaseModel):
     first_name: str
-    middle_name:str
-    last_name:str|None
+    middle_name:str|None
+    last_name:str
     email: EmailStr|None
     phone: str|None
     department: str
