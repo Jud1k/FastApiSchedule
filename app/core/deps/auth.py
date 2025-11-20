@@ -26,6 +26,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/login/")
 def get_refresh_token(request: Request):
     token = request.cookies.get("refresh_token")
     if not token:
+        logger.warning("No refresh token")
         raise MissingCoockies
     return token
 
@@ -37,11 +38,14 @@ async def get_current_user(
     try:
         payload = decode_token(token=token)
     except ExpiredSignatureError:
+        logger.warning("Access token expired.")
         raise TokenExpiredException
     except JWTError:
+        logger.warning("Access token not valid.")
         raise NoJwtException
     user = await service.get_by_id(user_id=uuid.UUID(payload["sub"]))
     if not user:
+        logger.warning(f"User with ID {payload["sub"]} not found.")
         raise NotFoundException("User", payload["sub"])
     return UserRead.model_validate(user)
 
