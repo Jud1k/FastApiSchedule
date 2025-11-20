@@ -50,8 +50,8 @@ class Group(Base):
 class Teacher(Base):
     id: Mapped[int_pk]
     first_name: Mapped[str] = mapped_column(String(100),nullable=False)
-    middle_name:Mapped[str] = mapped_column(String(100),nullable=False)
-    last_name: Mapped[str] = mapped_column(String(100),nullable=True)
+    middle_name:Mapped[str] = mapped_column(String(100),nullable=True)
+    last_name: Mapped[str] = mapped_column(String(100),nullable=False)
     email: Mapped[str] = mapped_column(String(100),unique=True,nullable=True)
     phone: Mapped[str] = mapped_column(String(18),unique=True,nullable=True)
     department: Mapped[str] = mapped_column(String(50),nullable=False)
