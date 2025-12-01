@@ -4,14 +4,14 @@ services:
             context: .
             dockerfile: Dockerfile
         ports:
-            - "8000:8000"
+            - "5000:8000"
         volumes:
             - .:/app
         environment:
             - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
             - REDIS_URL=redis://${REDIS_HOST}:${REDIS_PORT}/${REDIS_SSL}
         env_file:
-            - .docker.env
+            - .env
         depends_on:
             db:
                 condition: service_healthy
