@@ -16,7 +16,6 @@ from app.exceptions import (
     NotFoundException,
     TokenExpiredException,
 )
-from app.db.models import User
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +50,9 @@ async def get_current_user(
 
 CurrentUser = Annotated[UserRead,Depends(get_current_user)]
 
-async def get_current_admin_user(current_user: User = Depends(get_current_user)):
+async def get_current_admin_user(current_user: CurrentUser):
     if current_user.role == "admin":
         return current_user
     raise ForbiddenException
+
+AdminUser = Annotated[UserRead,Depends(get_current_admin_user)]

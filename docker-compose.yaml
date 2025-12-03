@@ -4,9 +4,7 @@ services:
             context: .
             dockerfile: Dockerfile
         ports:
-            - "5000:8000"
-        volumes:
-            - .:/app
+            - "8000:8000"
         environment:
             - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
             - REDIS_URL=redis://${REDIS_HOST}:${REDIS_PORT}/${REDIS_SSL}
@@ -18,6 +16,11 @@ services:
             redis:
                 condition: service_healthy
         restart: unless-stopped
+        healthcheck:
+            test: ["CMD","curl", "-f","http://localhost/8000/api/v1/utils/health-check/"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
     db:
         image: postgres:16.8-alpine
         environment:

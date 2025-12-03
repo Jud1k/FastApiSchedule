@@ -22,8 +22,8 @@ from app.domain.auth.utils import (
     verify_password,
 )
 from app.exceptions import (
+    ConflictException,
     IncorrectEmailOrPasswordException,
-    UserAlreadyExistsException,
 )
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ router = APIRouter(tags=["Auth"])
 async def register_user(request:Request,user_in: UserRegister, service: AuthServiceDep):
     user = await service.get_by_email(email=user_in.email)
     if user:
-        raise UserAlreadyExistsException
+        raise ConflictException("User")
     user = await service.create(user_in=user_in)
     return user
 

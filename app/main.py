@@ -5,22 +5,14 @@ import uuid
 
 from contextlib import asynccontextmanager
 
-import uvicorn
 from fastapi import FastAPI, Request, Response, status
 from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.logging import configure_logging
+from app.configure_logging import configure_logging
 from app.cache.manager import redis_manager
-from app.domain.auth.routes import router as user_router
-from app.domain.building.routes import router as building_router
-from app.domain.group.routes import router as group_router
-from app.domain.lesson.routes import router as schedule_router
-from app.domain.room.routes import router as room_router
-from app.domain.student.routes import router as student_router
-from app.domain.subject.routes import router as subject_router
-from app.domain.teacher.routes import router as teacher_router
+from app.router import api_router
 
 logger = logging.getLogger(__name__)
 
@@ -39,14 +31,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-app.include_router(student_router, prefix="/api/v1")
-app.include_router(teacher_router, prefix="/api/v1")
-app.include_router(subject_router, prefix="/api/v1")
-app.include_router(room_router, prefix="/api/v1")
-app.include_router(group_router, prefix="/api/v1")
-app.include_router(schedule_router, prefix="/api/v1")
-app.include_router(building_router, prefix="/api/v1")
-app.include_router(user_router, prefix="/api/v1")
+app.include_router(router=api_router,prefix="/api/v1")
 
 origins = [
     "http://localhost:5173",
@@ -99,7 +84,3 @@ async def validation_exception_handler2(req: Request, exc: ResponseValidationErr
 @app.get("/")
 async def main_page()->dict:
     return {"Hi": "Guys"}
-
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
