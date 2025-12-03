@@ -10,6 +10,8 @@ class Setting(BaseSettings):
     REDIS_PORT: int
     REDIS_SSL: bool
     REDIS_HOST: str
+    FIRST_SUPERUSER:str
+    FIRST_SUPERUSER_PASSWORD:str
     SECRET_KEY: str
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES:int
