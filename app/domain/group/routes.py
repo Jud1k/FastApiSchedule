@@ -1,11 +1,12 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, status
 from fastapi.params import Query
 
+from app.core.deps.auth import get_current_admin_user
 from app.core.deps.service import GroupServiceDep
 from app.exceptions import NotFoundException
 from app.domain.group.schemas import GroupRead, GroupSummary, GroupCreate, GroupUpdate
 
-router = APIRouter(prefix="/group", tags=["Groups👩‍💻👨‍💻"])
+router = APIRouter(prefix="/group", tags=["Groups👩‍💻👨‍💻"],dependencies=[Depends(get_current_admin_user)])
 
 
 @router.get("/search", response_model=list[GroupRead])

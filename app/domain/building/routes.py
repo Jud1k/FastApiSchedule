@@ -1,11 +1,12 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, status,Depends
 
+from app.core.deps.auth import get_current_admin_user
 from app.domain.building.schemas import BuildingCreate, BuildingRead, BuildingUpdate
 from app.core.deps.service import BuildingServiceDep
 from app.exceptions import NotFoundException
 
 
-router = APIRouter(prefix="/building", tags=["Building"])
+router = APIRouter(prefix="/building", tags=["Building"],dependencies=[Depends(get_current_admin_user)])
 
 
 @router.get("/", response_model=list[BuildingRead])
