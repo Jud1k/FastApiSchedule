@@ -8,7 +8,7 @@ from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
-from app.db.models import User, Lesson, Student, Subject, Building, Room, Group, Teacher
+from app.db.models import *
 
 sys.path.insert(0, dirname(dirname(abspath(__file__))))
 
