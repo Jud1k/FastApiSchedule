@@ -2,7 +2,6 @@ import asyncio
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.auth.service import AuthService
 from app.db.database import engine
 from app.db.models import User
 from app.core.config import settings
